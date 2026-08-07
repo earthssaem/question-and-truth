@@ -65,6 +65,13 @@ export function isValidOrder(cards: Card[]): boolean {
   return true
 }
 
+export function toggleSelectedCard(selected: Card[], card: Card, limit = 8): Card[] {
+  const exists = selected.some((item) => cardId(item) === cardId(card))
+  if (exists) return selected.filter((item) => cardId(item) !== cardId(card))
+  if (selected.length >= limit) return selected
+  return [...selected, card]
+}
+
 export function sameRanks(cards: Card[], guess: Rank[]): boolean {
   return cards.length === guess.length && cards.every((card, index) => card.rank === guess[index])
 }
@@ -140,6 +147,6 @@ export function resolveLocalBet(state: GameState, opponentBet: number): GameStat
     opponentBet: null,
     winnerIndex,
     result: null,
-    message: `${state.players[winnerIndex].nickname}가 행동권을 획득했습니다.`,
+    message: winnerIndex === state.myIndex ? '행동을 선택하세요.' : '상대방의 차례입니다.',
   }
 }

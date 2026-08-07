@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { awardAndAdvance, isValidOrder, makeInitialGame, resolveLocalBet, sameRanks, type Card } from './game'
+import { awardAndAdvance, isValidOrder, makeInitialGame, resolveLocalBet, sameRanks, toggleSelectedCard, type Card } from './game'
 
 describe('game rules', () => {
   it('같은 무늬의 카드는 오름차순으로만 배치한다', () => {
@@ -33,6 +33,39 @@ describe('game rules', () => {
     expect(isValidOrder(duplicate)).toBe(false)
   })
 
+  it('카드를 클릭한 순서대로 슬롯에 넣고 중간 카드를 취소하면 앞으로 당긴다', () => {
+    const first: Card = { suit: 'spades', rank: '3' }
+    const second: Card = { suit: 'hearts', rank: '7' }
+    const third: Card = { suit: 'diamonds', rank: 'Q' }
+    let selected: Card[] = []
+
+    selected = toggleSelectedCard(selected, first)
+    selected = toggleSelectedCard(selected, second)
+    selected = toggleSelectedCard(selected, third)
+    expect(selected).toEqual([first, second, third])
+
+    selected = toggleSelectedCard(selected, second)
+    expect(selected).toEqual([first, third])
+  })
+
+  it('8개 슬롯이 유효하게 채워져야 확정할 수 있고 추가 선택은 무시한다', () => {
+    const selected: Card[] = [
+      { suit: 'spades', rank: 'A' },
+      { suit: 'hearts', rank: '2' },
+      { suit: 'diamonds', rank: '3' },
+      { suit: 'clubs', rank: '4' },
+      { suit: 'spades', rank: '5' },
+      { suit: 'hearts', rank: '6' },
+      { suit: 'diamonds', rank: '7' },
+      { suit: 'clubs', rank: '8' },
+    ]
+    const extra: Card = { suit: 'spades', rank: 'K' }
+
+    expect(selected.length === 8 && isValidOrder(selected)).toBe(true)
+    expect(toggleSelectedCard(selected, extra)).toEqual(selected)
+    expect(selected.slice(0, 7).length === 8 && isValidOrder(selected.slice(0, 7))).toBe(false)
+  })
+
   it('라운드 전환 한 번에 양쪽에 2칩을 지급한다', () => {
     const next = awardAndAdvance(makeInitialGame())
     expect(next.players.map((player) => player.tokens)).toEqual([12, 12])
@@ -58,5 +91,16 @@ describe('game rules', () => {
     expect(next.players.map((player) => player.tokens)).toEqual([6, 8])
     expect(next.winnerIndex).toBe(0)
     expect(next.opponentBet).toBeNull()
+    expect(next.message).toBe('행동을 선택하세요.')
+  })
+
+  it('상대가 베팅에서 이기면 상대방 차례로 대기한다', () => {
+    const state = { ...makeInitialGame(), phase: 'betting' as const, bet: 2 }
+    const next = resolveLocalBet(state, 4)
+
+    expect(next.phase).toBe('action_choice')
+    expect(next.players.map((player) => player.tokens)).toEqual([8, 6])
+    expect(next.winnerIndex).toBe(1)
+    expect(next.message).toBe('상대방의 차례입니다.')
   })
 })

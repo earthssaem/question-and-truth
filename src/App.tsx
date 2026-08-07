@@ -11,6 +11,7 @@ import {
   resolveLocalBet,
   sameRanks,
   suitSymbol,
+  toggleSelectedCard,
   type Action,
   type Card,
   type GameState,
@@ -158,14 +159,7 @@ function App() {
   }, [game.players, view])
 
   const toggleCard = (card: Card) => {
-    setGame((current) => {
-      const exists = current.selectedCards.some((item) => cardId(item) === cardId(card))
-      if (!exists && current.selectedCards.length >= 8) return current
-      const selectedCards = exists
-        ? current.selectedCards.filter((item) => cardId(item) !== cardId(card))
-        : [...current.selectedCards, card]
-      return { ...current, selectedCards }
-    })
+    setGame((current) => ({ ...current, selectedCards: toggleSelectedCard(current.selectedCards, card) }))
   }
 
   const confirmCards = () => {
@@ -283,8 +277,8 @@ function App() {
           : <Betting game={game} setGame={setGame} onConfirm={confirmBet} />)}
         {game.phase === 'bet_result' && <Waiting text={game.message} />}
         {game.phase === 'action_choice' && (game.winnerIndex === game.myIndex
-          ? <ActionChoice message={game.message} onChoose={chooseAction} />
-          : <Waiting text={game.message || '상대가 행동을 고르고 있습니다.'} />)}
+          ? <ActionChoice onChoose={chooseAction} />
+          : <Waiting text="상대방의 차례입니다." />)}
         {game.phase === 'question' && <Question onDone={() => endRound()} />}
         {game.phase === 'truth' && <Truth guess={game.truthGuess} onChange={changeGuess} onDeclare={declareTruth} />}
         {game.phase === 'round_end' && <Waiting text={game.message} />}
@@ -297,15 +291,39 @@ function App() {
 
 function CardSelection({ selected, onToggle, onConfirm }: { selected: Card[]; onToggle: (card: Card) => void; onConfirm: () => void }) {
   const valid = selected.length === 8 && isValidOrder(selected)
-  return <div className="selection"><div className="stage-heading"><p>나의 카드 구성</p><h2>카드 8장을 선택하세요</h2><span>{selected.length} / 8</span></div><div className="deck-grid">{deck.map((card) => <CardFace key={cardId(card)} card={card} selected={selected.some((item) => cardId(item) === cardId(card))} compact onClick={() => onToggle(card)} />)}</div><div className="selection-footer"><p className={!valid && selected.length === 8 ? 'error' : ''}>{selected.length === 8 && !valid ? '같은 무늬는 왼쪽에서 오른쪽으로 오름차순이어야 합니다.' : '선택한 순서가 1번부터 8번까지의 위치가 됩니다.'}</p><button className="primary" disabled={!valid} onClick={onConfirm}>배치 확정 <ChevronRight size={18} /></button></div></div>
+  return (
+    <div className="selection">
+      <div className="stage-heading"><p>나의 카드 구성</p><h2>카드 8장을 선택하세요</h2><span>{selected.length} / 8</span></div>
+      <div className="deck-grid">
+        {deck.map((card) => <CardFace key={cardId(card)} card={card} selected={selected.some((item) => cardId(item) === cardId(card))} compact onClick={() => onToggle(card)} />)}
+      </div>
+      <div className="selection-slots" aria-label="선택한 카드 배열">
+        {Array.from({ length: 8 }, (_, index) => {
+          const card = selected[index]
+          return (
+            <div className="selection-slot" key={index}>
+              <span>{index + 1}</span>
+              {card
+                ? <CardFace card={card} compact onClick={() => onToggle(card)} />
+                : <div className="empty-card-slot" aria-label={`${index + 1}번 빈 슬롯`} />}
+            </div>
+          )
+        })}
+      </div>
+      <div className="selection-footer">
+        <p className="error" aria-live="polite">{selected.length === 8 && !valid ? '같은 무늬는 왼쪽에서 오른쪽으로 오름차순이어야 합니다.' : ''}</p>
+        <button className="primary" disabled={!valid} onClick={onConfirm}>배치 확정 <ChevronRight size={18} /></button>
+      </div>
+    </div>
+  )
 }
 
 function Betting({ game, setGame, onConfirm }: { game: GameState; setGame: React.Dispatch<React.SetStateAction<GameState>>; onConfirm: () => void }) {
   return <div className="center-action"><p className="eyebrow">SECRET BET</p><h2>얼마를 걸겠습니까?</h2><p>{game.message || '두 플레이어의 베팅 수는 서로에게 공개되지 않습니다.'}</p><div className="stepper"><button title="베팅 감소" onClick={() => setGame((current) => ({ ...current, bet: Math.max(1, current.bet - 1) }))}><ChevronLeft /></button><div><strong>{game.bet}</strong><span>CHIP</span></div><button title="베팅 증가" onClick={() => setGame((current) => ({ ...current, bet: Math.min(game.players[game.myIndex].tokens, current.bet + 1) }))}><ChevronRight /></button></div><button className="primary" onClick={onConfirm}>베팅 확정</button></div>
 }
 
-function ActionChoice({ message, onChoose }: { message: string; onChoose: (action: Action) => void }) {
-  return <div className="center-action"><p className="eyebrow">YOUR MOVE</p><h2>하나의 행동을 선택하세요</h2><p>{message}</p><div className="action-grid"><button onClick={() => onChoose('QUESTION')}><span>Q</span><strong>QUESTION</strong><small>상대에게 직접 질문하기</small></button><button onClick={() => onChoose('TRUTH')}><span>T</span><strong>TRUTH</strong><small>카드 배열 선언하기</small></button></div></div>
+function ActionChoice({ onChoose }: { onChoose: (action: Action) => void }) {
+  return <div className="center-action"><p className="eyebrow">YOUR MOVE</p><h2>행동을 선택하세요.</h2><div className="action-grid"><button onClick={() => onChoose('QUESTION')}><span>Q</span><strong>QUESTION</strong><small>상대에게 직접 질문하기</small></button><button onClick={() => onChoose('TRUTH')}><span>T</span><strong>TRUTH</strong><small>카드 배열 선언하기</small></button></div></div>
 }
 
 function Question({ onDone }: { onDone: () => void }) {

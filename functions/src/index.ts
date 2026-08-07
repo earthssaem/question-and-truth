@@ -288,7 +288,7 @@ export const submitBet = onCall({ region }, async (request) => {
       winnerUid,
       action: null,
       result: null,
-      message: `${winner.nickname}가 행동권을 획득했습니다.`,
+      message: `${winner.nickname}의 차례입니다.`,
     })
   })
   return { ok: true }
