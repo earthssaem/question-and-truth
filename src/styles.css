@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap');
+
+:root { font-family: 'Noto Sans KR', sans-serif; color: #f3f0e8; background: #0d0d0d; font-synthesis: none; letter-spacing: 0; --gold: #d6ac55; --gold-light: #efd58a; --panel: #171717; --line: #35322c; --muted: #97938b; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: #0d0d0d; }
+button, input, select { font: inherit; letter-spacing: 0; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .38; }
+
+.home-shell, .lobby-shell { min-height: 100vh; display: grid; place-items: center; padding: 32px 20px; background: radial-gradient(circle at 50% 25%, #25231f 0, #121212 38%, #090909 72%); }
+.home-shell::before, .lobby-shell::before { content: ''; position: fixed; inset: 18px; border: 1px solid #292721; pointer-events: none; }
+.home-panel, .lobby-panel { width: min(430px, 100%); text-align: center; position: relative; }
+.brand-mark { margin: 0 auto 22px; width: 74px; height: 74px; border: 1px solid var(--gold); display: grid; place-items: center; font: 700 24px 'Roboto Mono'; color: var(--gold-light); transform: rotate(45deg); }
+.brand-mark span { color: #77736b; }.brand-mark { line-height: 1; }.brand-mark::first-line { transform: rotate(-45deg); }
+.eyebrow { color: var(--gold); font: 600 11px 'Roboto Mono'; letter-spacing: 2px; margin: 0 0 12px; }
+h1 { font-size: clamp(38px, 10vw, 54px); line-height: 1.1; margin: 0; font-weight: 800; }
+.home-copy { color: var(--muted); font-size: 14px; line-height: 1.7; margin: 18px 0 36px; }
+.field-label { display: block; color: #aaa59b; font-size: 12px; text-align: left; margin: 0 0 8px; }
+input, select { width: 100%; height: 52px; border: 1px solid #3a3833; background: #151515; color: #f3f0e8; border-radius: 4px; padding: 0 15px; outline: none; }
+input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 2px #d6ac5522; }
+.primary, .secondary, .icon-button { border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
+.primary { min-height: 48px; padding: 0 22px; border: 1px solid var(--gold); background: var(--gold); color: #14120e; }
+.primary:hover:not(:disabled) { background: var(--gold-light); border-color: var(--gold-light); }
+.secondary { height: 52px; white-space: nowrap; padding: 0 18px; border: 1px solid #4b4840; background: #22211e; color: #f3f0e8; }
+.wide { width: 100%; margin-top: 12px; }
+.join-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 8px; }
+.demo-note { color: #6f6c66; font-size: 11px; line-height: 1.6; margin: 18px 16px 0; }
+.form-error { color: #ef7772; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 12px; margin: 14px 0 0; }
+
+.lobby-panel h1 { font-size: 34px; margin-bottom: 28px; }
+.room-code { border: 1px solid var(--line); background: #171717; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 16px; }
+.room-code span { color: var(--muted); font-size: 12px; text-align: left; }.room-code strong { color: var(--gold-light); font: 600 28px 'Roboto Mono'; letter-spacing: 4px; }
+.icon-button { justify-self: end; width: 38px; height: 38px; border: 1px solid #3c3933; background: #24231f; color: var(--gold); }
+.versus { display: grid; grid-template-columns: 1fr 42px 1fr; gap: 10px; align-items: center; padding: 34px 0; }
+.versus > div { display: grid; justify-items: center; gap: 8px; min-width: 0; }.versus b { color: #5e5a52; font: 500 13px 'Roboto Mono'; }
+.versus strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.versus small { color: var(--gold); font-size: 11px; }
+.avatar { width: 64px; height: 64px; border: 1px solid var(--gold); display: grid; place-items: center; font: 600 16px 'Roboto Mono'; color: var(--gold); }.avatar.muted { border-color: #4c4942; color: #77736b; }
+
+.game-shell { min-height: 100vh; background: #101010; display: grid; grid-template-rows: 58px auto 1fr auto; }
+.game-header { border-bottom: 1px solid #292929; padding: 0 clamp(16px, 4vw, 48px); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; color: var(--muted); font: 500 11px 'Roboto Mono'; }
+.round b { color: var(--gold-light); font-size: 16px; }.phase { color: var(--gold); padding: 7px 12px; border: 1px solid #413a2d; background: #191713; }.room-small { text-align: right; }
+.scoreboard { min-height: 105px; display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); align-items: stretch; border-bottom: 1px solid #292929; }
+.player-panel { padding: 22px clamp(16px, 5vw, 62px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }.player-panel.opponent { flex-direction: row-reverse; }
+.player-name { display: flex; align-items: center; gap: 10px; font-weight: 700; min-width: 0; }.status-light { width: 7px; height: 7px; border-radius: 50%; background: #4d4b47; flex: 0 0 auto; }.status-light.warning { background: #f34d4d; box-shadow: 0 0 9px #f34d4dcc; }
+.chip-count { font: 600 13px 'Roboto Mono'; color: #d7d3c8; white-space: nowrap; }.chip-mini { display: inline-block; width: 15px; height: 15px; border: 2px double var(--gold); border-radius: 50%; vertical-align: -3px; }
+.versus-small { display: grid; place-items: center; color: #59564f; font: 500 11px 'Roboto Mono'; border-left: 1px solid #292929; border-right: 1px solid #292929; }
+
+.stage { display: grid; min-height: 400px; place-items: center; padding: clamp(26px, 5vw, 58px); position: relative; }
+.stage-heading { display: grid; grid-template-columns: 1fr auto; align-items: end; margin-bottom: 24px; }.stage-heading p { grid-column: 1 / -1; color: var(--gold); font: 600 11px 'Roboto Mono'; margin: 0 0 8px; }.stage-heading h2 { margin: 0; font-size: 22px; }.stage-heading > span { color: var(--gold-light); font: 600 13px 'Roboto Mono'; }
+.selection { width: min(940px, 100%); }.deck-grid { display: grid; grid-template-columns: repeat(13, minmax(40px, 1fr)); gap: 6px; overflow-x: auto; padding: 4px 2px 12px; }
+.card { aspect-ratio: .7; min-width: 0; border: 1px solid #bab4a7; border-radius: 4px; background: #e7e3d9; color: #151515; padding: 7px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; font: 700 14px 'Roboto Mono'; transition: transform .12s, border-color .12s; }.card strong { align-self: center; font-size: 22px; }.card.red { color: #b62e2e; }.card:hover { transform: translateY(-2px); }.card.selected { border: 2px solid var(--gold); box-shadow: 0 0 0 2px #d6ac5544, 0 6px 18px #0008; transform: translateY(-4px); }.card.compact { padding: 5px; font-size: 12px; }.card.compact strong { font-size: 18px; }
+.selection-footer { margin-top: 20px; border-top: 1px solid #2f2f2f; padding-top: 18px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }.selection-footer p { color: var(--muted); font-size: 12px; margin: 0; }.selection-footer p.error { color: #f06b67; }
+
+.center-action { width: min(560px, 100%); text-align: center; display: grid; justify-items: center; }.center-action h2 { font-size: clamp(24px, 5vw, 34px); margin: 0 0 12px; }.center-action > p:not(.eyebrow) { color: var(--muted); line-height: 1.7; font-size: 13px; margin: 0 0 26px; }
+.stepper { display: grid; grid-template-columns: 48px 132px 48px; align-items: stretch; margin: 8px 0 28px; }.stepper button { border: 1px solid #46433d; background: #1c1c1c; color: var(--gold); }.stepper > div { min-height: 98px; border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold); display: grid; place-content: center; }.stepper strong { font: 600 38px 'Roboto Mono'; }.stepper span { color: var(--muted); font: 500 10px 'Roboto Mono'; }
+.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }.action-grid button { min-height: 180px; border: 1px solid #403c34; background: #171717; color: #f1eee7; display: grid; place-items: center; align-content: center; gap: 8px; border-radius: 4px; }.action-grid button:hover { border-color: var(--gold); background: #1f1c17; }.action-grid button > span { color: var(--gold); font: 600 36px 'Roboto Mono'; }.action-grid small { color: var(--muted); }
+.giant-letter { position: absolute; font: 700 260px 'Roboto Mono'; color: #ffffff05; pointer-events: none; }.question { min-height: 330px; }
+.truth-panel { width: min(720px, 100%); text-align: center; }.truth-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin: 30px 0; }.truth-grid label { min-width: 0; }.truth-grid label span { display: block; color: var(--gold); font: 600 11px 'Roboto Mono'; margin-bottom: 7px; }.truth-grid select { height: 54px; text-align: center; padding: 0 4px; }
+.result-mark { width: 92px; height: 92px; border: 2px solid var(--gold); color: var(--gold-light); display: grid; place-items: center; font: 700 20px 'Roboto Mono'; margin-bottom: 24px; }.result-mark.false { border-color: #ba4545; color: #ed7772; }
+.waiting-pulse { width: 13px; height: 13px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 0 #d6ac5577; animation: pulse 1.5s infinite; margin-bottom: 26px; }@keyframes pulse { 70% { box-shadow: 0 0 0 18px #d6ac5500; } }
+
+.my-cards { min-height: 142px; border-top: 1px solid #2b2b2b; background: #151515; display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 24px; padding: 18px clamp(16px, 5vw, 62px); }.my-cards > div:first-child span { color: var(--muted); font-size: 11px; line-height: 1.5; }.hand { display: grid; grid-template-columns: repeat(8, minmax(42px, 68px)); justify-content: end; gap: 8px; }.hand > div { min-width: 0; }.hand small { display: block; text-align: center; color: #77736b; font: 500 9px 'Roboto Mono'; margin-bottom: 4px; }.hand .card { width: 100%; }
+
+@media (max-width: 720px) {
+  .game-shell { grid-template-rows: 52px auto 1fr auto; }.room-small { display: none; }.game-header { grid-template-columns: 1fr auto; }.scoreboard { min-height: 88px; grid-template-columns: 1fr 30px 1fr; }.player-panel { padding: 14px 10px; display: grid; gap: 7px; }.player-panel.opponent { display: grid; }.player-panel.opponent > * { justify-self: end; }.player-name { font-size: 12px; }.chip-count { font-size: 11px; }.stage { padding: 28px 16px; }.deck-grid { grid-template-columns: repeat(13, 46px); }.selection-footer { align-items: stretch; flex-direction: column; }.selection-footer .primary { width: 100%; }.truth-grid { grid-template-columns: repeat(4, 1fr); }.my-cards { grid-template-columns: 1fr; gap: 10px; padding: 14px 12px; }.my-cards > div:first-child { display: flex; justify-content: space-between; align-items: center; }.my-cards .eyebrow { margin: 0; }.hand { grid-template-columns: repeat(8, minmax(32px, 1fr)); gap: 4px; justify-content: stretch; }.hand .card { padding: 3px; }.hand .card strong { font-size: 15px; }.action-grid { grid-template-columns: 1fr; }.action-grid button { min-height: 130px; }.room-code { grid-template-columns: 1fr auto auto; gap: 10px; }.room-code strong { font-size: 24px; letter-spacing: 2px; }
+}
