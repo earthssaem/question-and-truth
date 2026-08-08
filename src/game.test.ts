@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { awardAndAdvance, isActionOwner, isValidOrder, makeBetOptions, makeInitialGame, resolveLocalBet, sameRanks, toggleSelectedCard, type Card, type GameState } from './game'
+import { awardAndAdvance, isActionOwner, isJoinedOpponentId, isValidOrder, makeBetOptions, makeInitialGame, resolveLocalBet, sameRanks, toggleSelectedCard, type Card, type GameState } from './game'
 
 describe('game rules', () => {
   it('같은 무늬의 카드는 오름차순으로만 배치한다', () => {
@@ -147,5 +147,11 @@ describe('game rules', () => {
     expect(isActionOwner(0, 0)).toBe(true)
     expect(isActionOwner(0, 1)).toBe(false)
     expect(isActionOwner(0, null)).toBe(false)
+  })
+
+  it('대기실의 실제 상대 입장 여부를 placeholder와 구분한다', () => {
+    expect(isJoinedOpponentId('waiting')).toBe(false)
+    expect(isJoinedOpponentId('opponent')).toBe(false)
+    expect(isJoinedOpponentId('firebase-player-uid')).toBe(true)
   })
 })

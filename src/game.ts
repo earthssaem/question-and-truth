@@ -132,6 +132,10 @@ export function isActionOwner(myIndex: 0 | 1, winnerIndex: 0 | 1 | null) {
   return winnerIndex !== null && winnerIndex === myIndex
 }
 
+export function isJoinedOpponentId(id: string) {
+  return id !== 'waiting' && id !== 'opponent'
+}
+
 export function resolveLocalBet(state: GameState, opponentBet: number): GameState {
   const opponentIndex = state.myIndex === 0 ? 1 : 0
   const bets = state.myIndex === 0 ? [state.bet, opponentBet] : [opponentBet, state.bet]

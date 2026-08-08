@@ -7,6 +7,7 @@ import {
   deck,
   isRed,
   isActionOwner,
+  isJoinedOpponentId,
   isValidOrder,
   makeBetOptions,
   makeInitialGame,
@@ -86,6 +87,17 @@ function PlayerPanel({ player, opponent, active }: { player: GameState['players'
   )
 }
 
+function LobbyPlayer({ role, player, present }: { role: string; player: GameState['players'][number]; present: boolean }) {
+  const status = !present ? '입장 대기 중' : player.ready ? '준비 완료' : '입장 완료'
+  return (
+    <div className={`lobby-player ${!present ? 'waiting' : ''} ${player.ready ? 'ready' : ''}`}>
+      <span className="lobby-role">{role}</span>
+      <strong>{present ? player.nickname : '—'}</strong>
+      <small className="lobby-status"><i aria-hidden="true" />{status}</small>
+    </div>
+  )
+}
+
 function App() {
   const [view, setView] = useState<View>('home')
   const [nickname, setNickname] = useState('')
@@ -100,6 +112,7 @@ function App() {
   const opponent = game.players[game.myIndex === 0 ? 1 : 0]
   const actionPhase = game.phase === 'action_choice' || game.phase === 'question' || game.phase === 'truth'
   const myAction = isActionOwner(game.myIndex, game.winnerIndex)
+  const opponentJoined = !firebaseEnabled || isJoinedOpponentId(game.players[1].id)
 
   const clearOnlineSession = () => {
     localStorage.removeItem(SESSION_ROOM_KEY)
@@ -203,6 +216,7 @@ function App() {
   }, [onlineUid, roomCode])
 
   const toggleReady = () => {
+    if (!opponentJoined) return
     if (firebaseEnabled) { void setOnlineReady(roomCode, !me.ready).catch((reason) => setError(reason.message)); return }
     setGame((current) => {
       const players = current.players.map((player, index) => index === current.myIndex ? { ...player, ready: !player.ready } : { ...player, ready: true }) as GameState['players']
@@ -316,15 +330,17 @@ function App() {
     return (
       <main className="lobby-shell">
         <section className="lobby-panel">
-          <p className="eyebrow">비공개 방</p>
-          <h1>상대를 기다리는 중</h1>
+          <h1>{opponentJoined ? '두 플레이어가 입장했습니다' : '상대를 기다리는 중'}</h1>
           <div className="room-code"><span>방 코드</span><strong>{roomCode}</strong><button className="icon-button" title="방 코드 복사" type="button" onClick={() => { navigator.clipboard?.writeText(roomCode); setCopied(true) }}>{copied ? <Check /> : <Clipboard />}</button></div>
           <div className="versus">
-            <div><span className="avatar">01</span><strong>{game.players[0].nickname}</strong><small>{game.players[0].ready ? '준비 완료' : '대기 중'}</small></div>
+            <LobbyPlayer role="PLAYER 1" player={game.players[0]} present />
             <b>VS</b>
-            <div><span className="avatar muted">02</span><strong>{game.players[1].nickname}</strong><small>{game.players[1].ready ? '준비 완료' : '입장 완료'}</small></div>
+            <LobbyPlayer role="PLAYER 2" player={game.players[1]} present={opponentJoined} />
           </div>
-          <button className="primary wide" type="button" onClick={toggleReady}>{me.ready ? <Check size={18} /> : <Users size={18} />} {me.ready ? '준비 완료' : '준비'}</button>
+          <button className="primary wide" type="button" disabled={!opponentJoined} onClick={toggleReady}>
+            {me.ready ? <Check size={18} /> : <Users size={18} />}
+            {!opponentJoined ? '상대 입장 대기 중' : me.ready ? '준비 완료' : '준비'}
+          </button>
           {error && <p className="form-error"><ShieldAlert size={14} /> {error}</p>}
         </section>
       </main>
