@@ -55,7 +55,7 @@ function PlayerPanel({ player, opponent }: { player: GameState['players'][number
   return (
     <div className={`player-panel ${opponent ? 'opponent' : ''}`}>
       <div className="player-name">
-        <span className={`status-light ${player.warningOn ? 'warning' : ''}`} />
+        {opponent && <span className={`status-light ${player.warningOn ? 'warning' : ''}`} />}
         {player.nickname}
       </div>
       {!opponent && <div className="chip-count"><span className="chip-mini" /> {player.tokens} CHIP</div>}
@@ -212,7 +212,7 @@ function App() {
   }
 
   const phaseLabel = useMemo(() => ({
-    lobby: 'LOBBY', card_selection: 'CARD SELECTION', betting: 'SECRET BET', bet_result: 'BET RESULT', action_choice: 'YOUR MOVE', question: 'QUESTION', truth: 'TRUTH', round_end: 'ROUND END', game_over: 'GAME OVER',
+    lobby: 'LOBBY', card_selection: 'CARD SELECTION', betting: 'SECRET BET', bet_result: 'BET RESULT', action_choice: '', question: 'QUESTION', truth: 'TRUTH', round_end: 'ROUND END', game_over: 'GAME OVER',
   })[game.phase], [game.phase])
 
   if (view === 'home') {
@@ -260,7 +260,7 @@ function App() {
     <main className="game-shell">
       <header className="game-header">
         <span className="round">ROUND <b>{game.round}</b></span>
-        <span className="phase">{phaseLabel}</span>
+        {phaseLabel && <span className="phase">{phaseLabel}</span>}
         <span className="room-small">ROOM {roomCode}</span>
       </header>
       <section className="scoreboard">
@@ -268,7 +268,7 @@ function App() {
         <span className="versus-small">VS</span>
         <PlayerPanel player={opponent} opponent />
       </section>
-      <section className="stage">
+      <section className={`stage stage-${game.phase}`}>
         {game.phase === 'card_selection' && (me.confirmed
           ? <Waiting text="상대가 카드 배치를 확정하기를 기다리고 있습니다." />
           : <CardSelection selected={game.selectedCards} onToggle={toggleCard} onConfirm={confirmCards} />)}
@@ -323,7 +323,7 @@ function Betting({ game, setGame, onConfirm }: { game: GameState; setGame: React
 }
 
 function ActionChoice({ onChoose }: { onChoose: (action: Action) => void }) {
-  return <div className="center-action"><p className="eyebrow">YOUR MOVE</p><h2>행동을 선택하세요.</h2><div className="action-grid"><button onClick={() => onChoose('QUESTION')}><span>Q</span><strong>QUESTION</strong><small>상대에게 직접 질문하기</small></button><button onClick={() => onChoose('TRUTH')}><span>T</span><strong>TRUTH</strong><small>카드 배열 선언하기</small></button></div></div>
+  return <div className="center-action"><h2>행동을 선택하세요.</h2><div className="action-grid"><button onClick={() => onChoose('QUESTION')}><span>Q</span><strong>QUESTION</strong><small>상대에게 직접 질문하기</small></button><button onClick={() => onChoose('TRUTH')}><span>T</span><strong>TRUTH</strong><small>카드 배열 선언하기</small></button></div></div>
 }
 
 function Question({ onDone }: { onDone: () => void }) {
@@ -338,10 +338,10 @@ function GameOver({ onHome }: { onHome: () => void }) {
   return <div className="center-action"><span className="result-mark">TRUTH</span><p className="eyebrow">GAME OVER</p><h2>정답입니다.</h2><p>상대의 카드 배열을 정확히 알아냈습니다.</p><button className="primary" onClick={onHome}>처음으로</button></div>
 }
 
-function Waiting({ text }: { text: string }) { return <div className="center-action"><div className="waiting-pulse" /><h2>{text}</h2><p>상대의 선택 내용은 완료될 때까지 공개되지 않습니다.</p></div> }
+function Waiting({ text }: { text: string }) { return <div className="center-action waiting"><h2>{text}</h2></div> }
 
 function MyCards({ cards }: { cards: Card[] }) {
-  return <section className="my-cards"><div><p className="eyebrow">MY CARDS</p><span>언제든 확인할 수 있는 나의 비밀 배열</span></div><div className="hand">{cards.map((card, index) => <div key={`${cardId(card)}-${index}`}><small>{index + 1}</small><CardFace card={card} compact /></div>)}</div></section>
+  return <section className="my-cards"><p className="eyebrow">MY CARDS</p><div className="hand">{cards.map((card, index) => <div key={`${cardId(card)}-${index}`}><small>{index + 1}</small><CardFace card={card} compact /></div>)}</div></section>
 }
 
 export default App
