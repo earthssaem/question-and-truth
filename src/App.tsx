@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, ChevronRight, Clipboard, Minus, Plus, ShieldAlert, Users } from 'lucide-react'
 import {
   RANKS,
@@ -58,7 +58,7 @@ function CardFace({ card, selected, compact, onClick }: { card: Card; selected?:
 }
 
 function ChipIndicator({ tokens }: { tokens: number }) {
-  return <span className="chip-indicator"><i className="chip-token" aria-hidden="true" /><strong>{tokens}</strong>칩</span>
+  return <span className="chip-indicator"><i className="chip-token" aria-hidden="true" /><strong>{tokens}</strong>개</span>
 }
 
 function WarningLight({ on }: { on: boolean }) {
@@ -76,7 +76,7 @@ function PlayerPanel({ player, opponent, active }: { player: GameState['players'
     <div className={`player-panel ${opponent ? 'opponent' : ''} ${active ? 'active' : ''}`}>
       <div className="player-identity">
         <strong>{player.nickname}</strong>
-        <small>{opponent ? '상대' : '나'}</small>
+        <small>({opponent ? '상대' : '나'})</small>
       </div>
       <div className="player-meta">
         {active && <span className="turn-status"><i />현재 행동</span>}
@@ -273,10 +273,6 @@ function App() {
     setGame((current) => ({ ...current, truthGuess: current.truthGuess.map((item, itemIndex) => itemIndex === index ? rank : item) }))
   }
 
-  const phaseLabel = useMemo(() => ({
-    lobby: '대기실', card_selection: '카드 선택', betting: '비공개 베팅', bet_result: '베팅 결과', action_choice: '', question: '질문', truth: '진실', round_end: '라운드 종료', game_over: '게임 종료',
-  })[game.phase], [game.phase])
-
   if (view === 'home') {
     return (
       <main className="home-shell">
@@ -287,23 +283,29 @@ function App() {
             <p className="home-copy">카드를 숨기고, 칩을 걸고,<br />상대의 진실을 찾아보세요.</p>
           </header>
           <div className="home-actions">
-            <label className="field-label" htmlFor="nickname">닉네임</label>
-            <input id="nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={12} placeholder="이름을 입력하세요" />
-            <button className="primary wide" type="button" disabled={!nickname.trim()} onClick={() => void enterLobby()}>방 만들기</button>
-            <div className="home-divider"><span>또는</span></div>
-            <label className="field-label" htmlFor="room-code">방 코드</label>
-            <input
-              id="room-code"
-              className="room-input"
-              value={roomInput}
-              onChange={(event) => setRoomInput(event.target.value.toUpperCase())}
-              maxLength={6}
-              autoCapitalize="characters"
-              autoCorrect="off"
-              spellCheck={false}
-              placeholder="6자리 코드를 입력하세요"
-            />
-            <button className="secondary wide" type="button" disabled={!nickname.trim() || roomInput.length !== 6} onClick={() => void enterLobby(roomInput)}>방 참가하기</button>
+            <div className="home-group player-setup">
+              <p className="home-group-label">플레이어 정보</p>
+              <label className="field-label" htmlFor="nickname">닉네임</label>
+              <input id="nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={12} placeholder="이름을 입력하세요" />
+            </div>
+            <div className="home-group game-start">
+              <p className="home-group-label">게임 시작</p>
+              <button className="primary wide" type="button" disabled={!nickname.trim()} onClick={() => void enterLobby()}>방 만들기</button>
+              <div className="home-divider"><span>또는</span></div>
+              <label className="field-label" htmlFor="room-code">방 코드</label>
+              <input
+                id="room-code"
+                className="room-input"
+                value={roomInput}
+                onChange={(event) => setRoomInput(event.target.value.toUpperCase())}
+                maxLength={6}
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder="6자리 코드를 입력하세요"
+              />
+              <button className="secondary wide" type="button" disabled={!nickname.trim() || roomInput.length !== 6} onClick={() => void enterLobby(roomInput)}>방 참가하기</button>
+            </div>
           </div>
           {error && <p className="form-error"><ShieldAlert size={14} /> {error}</p>}
         </section>
@@ -333,9 +335,7 @@ function App() {
   return (
     <main className="game-shell">
       <header className="game-header">
-        <span className="round">ROUND <b>{game.round}</b></span>
-        {phaseLabel && <span className="phase">{phaseLabel}</span>}
-        <span className="room-small">ROOM {roomCode}</span>
+        <span className="game-meta"><b>{game.round}라운드</b><i>·</i>방 코드 {roomCode}</span>
       </header>
       <section className="scoreboard">
         <PlayerPanel player={me} active={actionPhase && myAction} />
@@ -450,7 +450,7 @@ function ActionChoice({ onChoose }: { onChoose: (action: Action) => void }) {
 }
 
 function BetLoss() {
-  return <div className="center-action"><ResultNotice title="상대가 베팅에서 이겼어요."><p>상대가 고르는 중...</p></ResultNotice></div>
+  return <div className="center-action waiting"><ResultNotice title="상대가 베팅에서 이겼어요."><p>상대가 고르는 중...</p></ResultNotice></div>
 }
 
 function Question({ onDone }: { onDone: () => void }) {
@@ -468,7 +468,7 @@ function GameOver({ onHome }: { onHome: () => void }) {
 function Waiting({ text }: { text: string }) { return <div className="center-action waiting"><ResultNotice title={text} /></div> }
 
 function MyCards({ cards }: { cards: Card[] }) {
-  return <section className="my-cards"><p className="eyebrow">내 카드</p><div className="hand">{cards.map((card, index) => <div key={`${cardId(card)}-${index}`}><small>{index + 1}</small><CardFace card={card} compact /></div>)}</div></section>
+  return <section className="my-cards"><p className="eyebrow"><span>내 카드</span></p><div className="hand">{cards.map((card, index) => <div key={`${cardId(card)}-${index}`}><small>{index + 1}</small><CardFace card={card} compact /></div>)}</div></section>
 }
 
 export default App
