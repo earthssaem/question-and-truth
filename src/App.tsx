@@ -107,7 +107,7 @@ function LobbyPlayer({ role, player, present }: { role: string; player: GameStat
 }
 
 function ExitButton({ className = '', onClick }: { className?: string; onClick: () => void }) {
-  return <button className={`exit-button ${className}`} type="button" onClick={onClick}><LogOut size={16} />나가기</button>
+  return <button className={`exit-button ${className}`} type="button" onClick={onClick}><LogOut size={19} />나가기</button>
 }
 
 function AppFooter() {
@@ -429,7 +429,7 @@ function App() {
         <main className="lobby-shell">
           <ExitButton className="lobby-exit-button" onClick={openExitConfirm} />
           <section className="lobby-panel">
-          <h1>{bothPlayersJoined ? '두 플레이어가 입장했습니다' : '상대를 기다리는 중'}</h1>
+          <h1>{bothPlayersJoined ? '두 플레이어 모두 입장했습니다' : '상대를 기다리는 중'}</h1>
           <div className="room-code"><span>방 코드</span><strong>{roomCode}</strong><button className="icon-button" title="방 코드 복사" type="button" onClick={() => { navigator.clipboard?.writeText(roomCode); setCopied(true) }}>{copied ? <Check /> : <Clipboard />}</button></div>
           <div className="versus">
             <LobbyPlayer role="PLAYER 1" player={game.players[0]} present={slotPresent(0)} />

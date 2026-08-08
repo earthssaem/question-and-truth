@@ -333,7 +333,7 @@ input:focus, select:focus {
   margin: 0 auto;
   padding: 0 6px;
   display: grid;
-  grid-template-columns: minmax(72px, 1fr) auto minmax(72px, 1fr);
+  grid-template-columns: minmax(88px, 1fr) auto minmax(88px, 1fr);
   align-items: center;
   color: var(--muted);
   font-size: 11px;
@@ -345,23 +345,25 @@ input:focus, select:focus {
 .game-meta i { color: #817d73; font-style: normal; }
 
 .exit-button {
-  min-width: 72px;
-  min-height: 40px;
-  padding: 0 8px;
+  min-width: 88px;
+  min-height: 44px;
+  padding: 0 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #aaa498;
-  font-size: 11px;
-  font-weight: 650;
-  transition: color 150ms ease, background 150ms ease;
+  gap: 7px;
+  border: 1px solid #ffffff1c;
+  border-radius: 10px;
+  background: #383930;
+  color: #ded7cb;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: inset 0 1px #ffffff0a;
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease, transform 150ms ease;
 }
 
-.exit-button:hover { background: #ffffff0a; color: var(--ivory); }
+.exit-button:hover { border-color: #ffffff2b; background: #44443a; color: var(--ivory); }
+.exit-button:active { transform: translateY(1px); background: #303128; }
 .game-header .exit-button { grid-column: 3; justify-self: end; }
 .lobby-exit-button { position: absolute; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); }
 
@@ -1110,7 +1112,6 @@ input:focus, select:focus {
   .game-header { min-height: 32px; }
   .game-meta { gap: 6px; font-size: 10px; }
   .game-meta b { font-size: 11px; }
-  .exit-button { min-width: 68px; min-height: 40px; padding: 0 5px; font-size: 10px; }
 
   .scoreboard {
     min-height: 78px;
