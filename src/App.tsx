@@ -6,6 +6,7 @@ import {
   cardId,
   deck,
   isRed,
+  isActionOwner,
   isValidOrder,
   makeBetOptions,
   makeInitialGame,
@@ -98,6 +99,7 @@ function App() {
   const me = game.players[game.myIndex]
   const opponent = game.players[game.myIndex === 0 ? 1 : 0]
   const actionPhase = game.phase === 'action_choice' || game.phase === 'question' || game.phase === 'truth'
+  const myAction = isActionOwner(game.myIndex, game.winnerIndex)
 
   const clearOnlineSession = () => {
     localStorage.removeItem(SESSION_ROOM_KEY)
@@ -324,7 +326,7 @@ function App() {
         <span className="room-small">ROOM {roomCode}</span>
       </header>
       <section className="scoreboard">
-        <PlayerPanel player={me} active={actionPhase && game.winnerIndex === game.myIndex} />
+        <PlayerPanel player={me} active={actionPhase && myAction} />
         <span className="versus-small">VS</span>
         <PlayerPanel player={opponent} opponent active={actionPhase && game.winnerIndex !== null && game.winnerIndex !== game.myIndex} />
       </section>
@@ -336,11 +338,15 @@ function App() {
           ? <Waiting text="상대가 베팅하는 중..." />
           : <Betting game={game} setGame={setGame} onConfirm={confirmBet} />)}
         {game.phase === 'bet_result' && <Waiting text={game.message} />}
-        {game.phase === 'action_choice' && (game.winnerIndex === game.myIndex
+        {game.phase === 'action_choice' && (myAction
           ? <ActionChoice onChoose={chooseAction} />
           : <BetLoss />)}
-        {game.phase === 'question' && <Question onDone={() => endRound()} />}
-        {game.phase === 'truth' && <Truth guess={game.truthGuess} onChange={changeGuess} onDeclare={declareTruth} />}
+        {game.phase === 'question' && (myAction
+          ? <Question onDone={() => endRound()} />
+          : <Waiting text="상대가 질문하는 중..." />)}
+        {game.phase === 'truth' && (myAction
+          ? <Truth guess={game.truthGuess} onChange={changeGuess} onDeclare={declareTruth} />
+          : <Waiting text="상대가 진실에 도전하는 중..." />)}
         {game.phase === 'round_end' && <Waiting text={game.message} />}
         {game.phase === 'game_over' && <GameOver onHome={() => { clearOnlineSession(); setRoomCode(''); setGame(makeInitialGame()); setView('home') }} />}
       </section>
@@ -393,6 +399,12 @@ function Betting({ game, setGame, onConfirm }: { game: GameState; setGame: React
         <div className="previous-result" role="status">
           <strong>ROUND {Math.max(1, game.round - 1)} · 동점!</strong>
           <span>행동 없이 라운드 종료 · 두 플레이어 +2칩</span>
+        </div>
+      )}
+      {game.result === 'false' && (
+        <div className="previous-result failed" role="status">
+          <strong>ROUND {Math.max(1, game.round - 1)} · 진실 도전 실패</strong>
+          <span>정답이 아닙니다 · 두 플레이어 +2칩</span>
         </div>
       )}
       <h2>몇 개의 칩을 걸까요?</h2>

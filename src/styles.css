@@ -619,6 +619,8 @@ input:focus, select:focus {
 
 .previous-result strong { color: #f0cf7a; font-size: 12px; white-space: nowrap; }
 .previous-result span { color: #c5c9bf; font-size: 11px; }
+.previous-result.failed { background: #4d4039; }
+.previous-result.failed strong { color: #f0a08f; }
 
 .stepper {
   margin: 6px 0 26px;

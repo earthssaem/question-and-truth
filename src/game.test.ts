@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { awardAndAdvance, isValidOrder, makeBetOptions, makeInitialGame, resolveLocalBet, sameRanks, toggleSelectedCard, type Card, type GameState } from './game'
+import { awardAndAdvance, isActionOwner, isValidOrder, makeBetOptions, makeInitialGame, resolveLocalBet, sameRanks, toggleSelectedCard, type Card, type GameState } from './game'
 
 describe('game rules', () => {
   it('같은 무늬의 카드는 오름차순으로만 배치한다', () => {
@@ -141,5 +141,11 @@ describe('game rules', () => {
     expect(next.players.map((player) => player.tokens)).toEqual([8, 6])
     expect(next.winnerIndex).toBe(1)
     expect(next.message).toBe('상대방의 차례입니다.')
+  })
+
+  it('베팅 승자에게만 질문과 진실 행동을 허용한다', () => {
+    expect(isActionOwner(0, 0)).toBe(true)
+    expect(isActionOwner(0, 1)).toBe(false)
+    expect(isActionOwner(0, null)).toBe(false)
   })
 })

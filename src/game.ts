@@ -128,6 +128,10 @@ export function awardAndAdvance(
   }
 }
 
+export function isActionOwner(myIndex: 0 | 1, winnerIndex: 0 | 1 | null) {
+  return winnerIndex !== null && winnerIndex === myIndex
+}
+
 export function resolveLocalBet(state: GameState, opponentBet: number): GameState {
   const opponentIndex = state.myIndex === 0 ? 1 : 0
   const bets = state.myIndex === 0 ? [state.bet, opponentBet] : [opponentBet, state.bet]
