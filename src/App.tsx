@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, ChevronRight, Clipboard, DoorOpen, Minus, Plus, ShieldAlert, Users } from 'lucide-react'
+import { Check, ChevronRight, Clipboard, Minus, Plus, ShieldAlert, Users } from 'lucide-react'
 import {
   RANKS,
   awardAndAdvance,
@@ -281,19 +281,31 @@ function App() {
     return (
       <main className="home-shell">
         <section className="home-panel">
-          <div className="brand-mark">Q<span>&</span>T</div>
-          <p className="eyebrow">2인용 테이블 게임</p>
-          <h1>질문과 진실</h1>
-          <p className="home-copy">카드를 숨기고, 칩을 걸고, 상대의 진실을 꿰뚫어 보세요.</p>
-          <label className="field-label" htmlFor="nickname">닉네임</label>
-          <input id="nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={12} placeholder="이름을 입력하세요" />
-          <button className="primary wide" type="button" disabled={!nickname.trim()} onClick={() => void enterLobby()}><Plus size={18} /> 방 만들기</button>
-          <div className="join-row">
-            <input value={roomInput} onChange={(event) => setRoomInput(event.target.value.toUpperCase())} maxLength={6} placeholder="방 코드 6자리" />
-            <button className="secondary" type="button" disabled={!nickname.trim() || roomInput.length !== 6} onClick={() => void enterLobby(roomInput)}><DoorOpen size={18} /> 참가</button>
+          <header className="home-intro">
+            <div className="suit-motif" aria-hidden="true"><span>♠</span><span>♥</span><span>♦</span><span>♣</span></div>
+            <h1>질문과 진실</h1>
+            <p className="home-copy">카드를 숨기고, 칩을 걸고,<br />상대의 진실을 찾아보세요.</p>
+          </header>
+          <div className="home-actions">
+            <label className="field-label" htmlFor="nickname">닉네임</label>
+            <input id="nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={12} placeholder="이름을 입력하세요" />
+            <button className="primary wide" type="button" disabled={!nickname.trim()} onClick={() => void enterLobby()}>방 만들기</button>
+            <div className="home-divider"><span>또는</span></div>
+            <label className="field-label" htmlFor="room-code">방 코드</label>
+            <input
+              id="room-code"
+              className="room-input"
+              value={roomInput}
+              onChange={(event) => setRoomInput(event.target.value.toUpperCase())}
+              maxLength={6}
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="6자리 코드를 입력하세요"
+            />
+            <button className="secondary wide" type="button" disabled={!nickname.trim() || roomInput.length !== 6} onClick={() => void enterLobby(roomInput)}>방 참가하기</button>
           </div>
           {error && <p className="form-error"><ShieldAlert size={14} /> {error}</p>}
-          <p className="demo-note">{firebaseEnabled ? '익명 인증으로 안전하게 연결됩니다.' : 'Firebase 설정 전에는 한 브라우저에서 전체 흐름을 확인하는 데모로 실행됩니다.'}</p>
         </section>
       </main>
     )

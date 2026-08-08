@@ -46,7 +46,14 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   outline-offset: 2px;
 }
 
-.home-shell, .lobby-shell {
+.home-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: max(44px, env(safe-area-inset-top)) 24px max(28px, env(safe-area-inset-bottom));
+  background: linear-gradient(155deg, #3b3c31 0%, #2c2e26 48%, #25261f 100%);
+}
+
+.lobby-shell {
   min-height: 100vh;
   display: grid;
   place-items: center;
@@ -54,7 +61,13 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   background: linear-gradient(155deg, #35352c 0%, #292a23 52%, #22231d 100%);
 }
 
-.home-panel, .lobby-panel {
+.home-panel {
+  width: min(420px, 100%);
+  margin: 0 auto;
+  padding: 20px 0 0;
+}
+
+.lobby-panel {
   width: min(460px, 100%);
   padding: 38px;
   text-align: center;
@@ -64,21 +77,18 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   box-shadow: 0 16px 42px #15161059, inset 0 1px #ffffff0d;
 }
 
-.brand-mark {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 22px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 12px;
-  background: #2b2c25;
-  color: var(--gold-light);
-  font: 700 22px 'Roboto Mono', Consolas, monospace;
-  box-shadow: 0 7px 18px #1516104d, inset 0 0 0 2px #c39a4b45;
+.home-intro { text-align: center; }
+
+.suit-motif {
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  color: #eee6d8;
+  font: 400 18px Georgia, serif;
 }
 
-.brand-mark span { color: #7f776c; }
+.suit-motif span:nth-child(2), .suit-motif span:nth-child(3) { color: #c8655d; }
 
 .eyebrow {
   margin: 0 0 10px;
@@ -96,12 +106,40 @@ h1 {
   line-height: 1.15;
 }
 
-.home-copy {
-  margin: 16px 0 32px;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.75;
+.home-panel h1 {
+  font-size: 42px;
+  font-weight: 750;
 }
+
+.home-copy {
+  margin: 14px 0 0;
+  color: #c8c1b5;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.home-actions { margin-top: 38px; text-align: left; }
+.home-actions input { height: 50px; background: #34362e; border-color: #5d5e52; }
+.home-actions input::placeholder { color: #8e8c82; }
+.home-actions input:focus { border-color: var(--sage); box-shadow: 0 0 0 3px #91a08724; }
+.home-actions .primary { background: #d0a64f; border-color: #d0a64f; }
+.home-actions .primary:hover:not(:disabled) { background: #dfb960; border-color: #dfb960; }
+.home-actions .secondary { background: #40443a; border-color: #72796a; color: #eee8dc; }
+.home-actions .secondary:hover:not(:disabled) { background: #4a4f43; border-color: #9aa58f; }
+
+.home-divider {
+  margin: 24px 0 20px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  color: #969286;
+  font-size: 11px;
+  text-align: center;
+}
+
+.home-divider::before, .home-divider::after { content: ''; height: 1px; background: #ffffff14; }
+.room-input { text-transform: uppercase; }
 
 .field-label {
   display: block;
@@ -170,20 +208,6 @@ input:focus, select:focus {
 }
 
 .wide { width: 100%; margin-top: 12px; }
-
-.join-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.demo-note {
-  margin: 18px 10px 0;
-  color: var(--muted-dark);
-  font-size: 11px;
-  line-height: 1.6;
-}
 
 .form-error {
   margin: 14px 0 0;
@@ -793,8 +817,14 @@ input:focus, select:focus {
 .hand .card-suit { font-size: 28px; }
 
 @media (max-width: 760px) {
-  .home-shell, .lobby-shell { padding: 18px 14px; }
-  .home-panel, .lobby-panel { padding: 30px 24px; }
+  .home-shell { padding: max(22px, env(safe-area-inset-top)) 22px max(22px, env(safe-area-inset-bottom)); }
+  .home-panel { padding: 10px 0 0; }
+  .home-panel h1 { font-size: 38px; font-weight: 750; }
+  .home-copy { margin-top: 12px; font-size: 14px; }
+  .home-actions { margin-top: 30px; }
+  .home-divider { margin: 21px 0 17px; }
+  .lobby-shell { padding: 18px 14px; }
+  .lobby-panel { padding: 30px 24px; }
   h1 { font-size: 40px; }
   .lobby-panel h1 { font-size: 30px; }
 
@@ -863,8 +893,11 @@ input:focus, select:focus {
 }
 
 @media (max-width: 400px) {
-  .home-panel, .lobby-panel { padding: 26px 18px; }
-  .brand-mark { width: 64px; height: 64px; }
+  .home-shell { padding-right: 20px; padding-left: 20px; }
+  .home-panel { padding-top: 8px; }
+  .home-panel h1 { font-size: 36px; }
+  .home-actions { margin-top: 27px; }
+  .lobby-panel { padding: 26px 18px; }
   h1 { font-size: 36px; }
 
   .player-panel { padding: 10px 8px; }
