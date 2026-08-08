@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Check, ChevronRight, Clipboard, List, Minus, Plus, ShieldAlert, Users, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Check, ChevronRight, Clipboard, List, LogOut, Minus, Plus, ShieldAlert, Users, X } from 'lucide-react'
 import {
   RANKS,
   awardAndAdvance,
@@ -30,6 +30,7 @@ import {
   finishOnlineQuestion,
   firebaseEnabled,
   joinOnlineRoom,
+  leaveOnlineRoom,
   setOnlineReady,
   submitOnlineBet,
   submitOnlineTruth,
@@ -43,6 +44,10 @@ const SESSION_ROOM_KEY = 'question-and-truth:room'
 const SESSION_NICKNAME_KEY = 'question-and-truth:nickname'
 
 const randomCode = () => Math.random().toString(36).slice(2, 8).toUpperCase()
+const clearOnlineSession = () => {
+  localStorage.removeItem(SESSION_ROOM_KEY)
+  localStorage.removeItem(SESSION_NICKNAME_KEY)
+}
 
 function CardFace({ card, selected, compact, onClick }: { card: Card; selected?: boolean; compact?: boolean; onClick?: () => void }) {
   const symbol = suitSymbol(card.suit)
@@ -101,6 +106,41 @@ function LobbyPlayer({ role, player, present }: { role: string; player: GameStat
   )
 }
 
+function ExitButton({ className = '', onClick }: { className?: string; onClick: () => void }) {
+  return <button className={`exit-button ${className}`} type="button" onClick={onClick}><LogOut size={16} />나가기</button>
+}
+
+function ExitConfirmModal({ lobby, pending, error, onCancel, onConfirm }: { lobby: boolean; pending: boolean; error: string; onCancel: () => void; onConfirm: () => void }) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !pending) onCancel()
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onCancel, pending])
+
+  return (
+    <div className="exit-modal-backdrop" onClick={() => { if (!pending) onCancel() }}>
+      <section className="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" onClick={(event) => event.stopPropagation()}>
+        <h2 id="exit-modal-title">{lobby ? '방에서 나갈까요?' : '게임을 종료하고 나갈까요?'}</h2>
+        <p>{lobby ? '현재 방에서 퇴장합니다.' : '나가면 현재 게임이 종료됩니다.'}</p>
+        {error && <p className="exit-modal-error"><ShieldAlert size={15} />{error}</p>}
+        <div className="exit-modal-actions">
+          <button className="secondary" type="button" disabled={pending} onClick={onCancel}>취소</button>
+          <button className={lobby ? 'primary' : 'exit-confirm-danger'} type="button" disabled={pending} onClick={onConfirm}>
+            {pending ? (lobby ? '나가는 중...' : '종료하는 중...') : lobby ? '나가기' : '게임 종료'}
+          </button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 function App() {
   const [view, setView] = useState<View>('home')
   const [nickname, setNickname] = useState('')
@@ -110,39 +150,65 @@ function App() {
   const [game, setGame] = useState<GameState>(makeInitialGame)
   const [onlineUid, setOnlineUid] = useState('')
   const [error, setError] = useState('')
+  const [exitOpen, setExitOpen] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [leaveError, setLeaveError] = useState('')
 
   const me = game.players[game.myIndex]
   const opponent = game.players[game.myIndex === 0 ? 1 : 0]
   const actionPhase = game.phase === 'action_choice' || game.phase === 'question' || game.phase === 'truth'
   const myAction = isActionOwner(game.myIndex, game.winnerIndex)
-  const opponentJoined = !firebaseEnabled || isJoinedOpponentId(game.players[1].id)
+  const slotPresent = (slot: 0 | 1) => !firebaseEnabled || isJoinedOpponentId(game.players[slot].id)
+  const bothPlayersJoined = slotPresent(0) && slotPresent(1)
 
-  const clearOnlineSession = () => {
-    localStorage.removeItem(SESSION_ROOM_KEY)
-    localStorage.removeItem(SESSION_NICKNAME_KEY)
-  }
+  const returnHome = useCallback(() => {
+    clearOnlineSession()
+    setRoomCode('')
+    setGame(makeInitialGame())
+    setExitOpen(false)
+    setLeaving(false)
+    setLeaveError('')
+    setView('home')
+  }, [])
 
-  const applyOnlineRoom = (room: OnlineRoom, uid: string) => {
-    const myIndex = Math.max(0, room.players.findIndex((player) => player.uid === uid)) as 0 | 1
+  const applyOnlineRoom = useCallback((room: OnlineRoom, uid: string) => {
+    const roomPlayerIndex = room.players.findIndex((player) => player.uid === uid)
+    if (roomPlayerIndex < 0) {
+      returnHome()
+      return
+    }
+    const roomPlayer = room.players[roomPlayerIndex]
+    const myIndex = (roomPlayer.slot === 0 || roomPlayer.slot === 1 ? roomPlayer.slot : roomPlayerIndex) as 0 | 1
+    if (room.phase === 'game_cancelled' && room.endedByUid === uid) {
+      returnHome()
+      return
+    }
     setGame((current) => {
-      const players = room.players.map((player) => ({
-        id: player.uid,
-        nickname: player.nickname,
-        tokens: player.uid === uid ? current.players[current.myIndex].tokens : 0,
-        warningOn: player.warningOn,
-        ready: player.ready,
-        confirmed: player.confirmed,
-        betSubmitted: player.betSubmitted,
-      }))
-      if (players.length === 1) players.push({ id: 'waiting', nickname: '상대 플레이어', tokens: 0, warningOn: false, ready: false, confirmed: false, betSubmitted: false })
+      const waitingPlayer = { id: 'waiting', nickname: '상대 플레이어', tokens: 0, warningOn: false, ready: false, confirmed: false, betSubmitted: false }
+      const players: GameState['players'] = [{ ...waitingPlayer }, { ...waitingPlayer }]
+      room.players.forEach((player, index) => {
+        const slot = (player.slot === 0 || player.slot === 1 ? player.slot : index) as 0 | 1
+        players[slot] = {
+          id: player.uid,
+          nickname: player.nickname,
+          tokens: player.uid === uid ? current.players[current.myIndex].tokens : 0,
+          warningOn: player.warningOn,
+          ready: player.ready,
+          confirmed: player.confirmed,
+          betSubmitted: player.betSubmitted,
+        }
+      })
+      const winnerPlayerIndex = room.winnerUid ? room.players.findIndex((player) => player.uid === room.winnerUid) : -1
+      const endedPlayerIndex = room.endedByUid ? room.players.findIndex((player) => player.uid === room.endedByUid) : -1
       return {
         ...current,
         phase: room.phase,
         round: room.round,
         myIndex,
-        players: [players[0], players[1]],
+        players,
         opponentBet: null,
-        winnerIndex: room.winnerUid ? (room.players.findIndex((player) => player.uid === room.winnerUid) as 0 | 1) : null,
+        winnerIndex: winnerPlayerIndex >= 0 ? (room.players[winnerPlayerIndex].slot ?? winnerPlayerIndex) as 0 | 1 : null,
+        endedByIndex: endedPlayerIndex >= 0 ? (room.players[endedPlayerIndex].slot ?? endedPlayerIndex) as 0 | 1 : null,
         action: room.action,
         result: room.result,
         message: room.message,
@@ -150,7 +216,7 @@ function App() {
       }
     })
     setView(room.phase === 'lobby' ? 'lobby' : 'game')
-  }
+  }, [returnHome])
 
   useEffect(() => {
     if (!firebaseEnabled) return
@@ -202,9 +268,7 @@ function App() {
     const handleConnectionError = (reason: Error) => {
       setError(reason.message)
       if (reason.message.includes('찾을 수 없습니다') || reason.message.includes('permission')) {
-        clearOnlineSession()
-        setRoomCode('')
-        setView('home')
+        returnHome()
       }
     }
     const stopRoom = watchOnlineRoom(roomCode, (room) => applyOnlineRoom(room, onlineUid), handleConnectionError)
@@ -216,15 +280,36 @@ function App() {
         : player) as GameState['players'],
     })), handleConnectionError)
     return () => { stopRoom(); stopPrivate() }
-  }, [onlineUid, roomCode])
+  }, [applyOnlineRoom, onlineUid, returnHome, roomCode])
 
   const toggleReady = () => {
-    if (!opponentJoined) return
+    if (!bothPlayersJoined) return
     if (firebaseEnabled) { void setOnlineReady(roomCode, !me.ready).catch((reason) => setError(reason.message)); return }
     setGame((current) => {
       const players = current.players.map((player, index) => index === current.myIndex ? { ...player, ready: !player.ready } : { ...player, ready: true }) as GameState['players']
       return { ...current, players, message: '두 플레이어가 준비되었습니다.' }
     })
+  }
+
+  const openExitConfirm = () => {
+    setLeaveError('')
+    setExitOpen(true)
+  }
+
+  const leaveRoom = async () => {
+    if (leaving) return
+    setLeaving(true)
+    setLeaveError('')
+    if (firebaseEnabled) {
+      try {
+        await leaveOnlineRoom(roomCode)
+      } catch {
+        setLeaveError('방에서 나가지 못했습니다. 다시 시도해주세요.')
+        setLeaving(false)
+        return
+      }
+    }
+    returnHome()
   }
 
   useEffect(() => {
@@ -332,20 +417,22 @@ function App() {
   if (view === 'lobby') {
     return (
       <main className="lobby-shell">
+        <ExitButton className="lobby-exit-button" onClick={openExitConfirm} />
         <section className="lobby-panel">
-          <h1>{opponentJoined ? '두 플레이어가 입장했습니다' : '상대를 기다리는 중'}</h1>
+          <h1>{bothPlayersJoined ? '두 플레이어가 입장했습니다' : '상대를 기다리는 중'}</h1>
           <div className="room-code"><span>방 코드</span><strong>{roomCode}</strong><button className="icon-button" title="방 코드 복사" type="button" onClick={() => { navigator.clipboard?.writeText(roomCode); setCopied(true) }}>{copied ? <Check /> : <Clipboard />}</button></div>
           <div className="versus">
-            <LobbyPlayer role="PLAYER 1" player={game.players[0]} present />
+            <LobbyPlayer role="PLAYER 1" player={game.players[0]} present={slotPresent(0)} />
             <b>VS</b>
-            <LobbyPlayer role="PLAYER 2" player={game.players[1]} present={opponentJoined} />
+            <LobbyPlayer role="PLAYER 2" player={game.players[1]} present={slotPresent(1)} />
           </div>
-          <button className="primary wide" type="button" disabled={!opponentJoined} onClick={toggleReady}>
+          <button className="primary wide" type="button" disabled={!bothPlayersJoined} onClick={toggleReady}>
             {me.ready ? <Check size={18} /> : <Users size={18} />}
-            {!opponentJoined ? '상대 입장 대기 중' : me.ready ? '준비 완료' : '준비'}
+            {!bothPlayersJoined ? '상대 입장 대기 중' : me.ready ? '준비 완료' : '준비'}
           </button>
           {error && <p className="form-error"><ShieldAlert size={14} /> {error}</p>}
         </section>
+        {exitOpen && <ExitConfirmModal lobby pending={leaving} error={leaveError} onCancel={() => { if (!leaving) setExitOpen(false) }} onConfirm={() => void leaveRoom()} />}
       </main>
     )
   }
@@ -354,6 +441,7 @@ function App() {
     <main className="game-shell">
       <header className="game-header">
         <span className="game-meta"><b>{game.round}라운드</b><i>·</i>방 코드 {roomCode}</span>
+        {game.phase !== 'game_over' && game.phase !== 'game_cancelled' && <ExitButton onClick={openExitConfirm} />}
       </header>
       <section className="scoreboard">
         <PlayerPanel player={game.players[0]} slot={0} isMe={game.myIndex === 0} active={actionPhase && game.winnerIndex === 0} />
@@ -378,9 +466,11 @@ function App() {
           ? <Truth guess={game.truthGuess} onChange={changeGuess} onDeclare={declareTruth} />
           : <Waiting text="상대가 진실에 도전하는 중..." />)}
         {game.phase === 'round_end' && <Waiting text={game.message} />}
-        {game.phase === 'game_over' && <GameOver game={game} onHome={() => { clearOnlineSession(); setRoomCode(''); setGame(makeInitialGame()); setView('home') }} />}
+        {game.phase === 'game_over' && <GameOver game={game} onHome={returnHome} />}
+        {game.phase === 'game_cancelled' && <GameCancelled endedByMe={game.endedByIndex === game.myIndex} onHome={returnHome} />}
       </section>
       {game.phase !== 'card_selection' && game.myCards.length > 0 && <MyCards cards={game.myCards} />}
+      {exitOpen && <ExitConfirmModal lobby={false} pending={leaving} error={leaveError} onCancel={() => { if (!leaving) setExitOpen(false) }} onConfirm={() => void leaveRoom()} />}
     </main>
   )
 }
@@ -575,6 +665,18 @@ function GameOver({ game, onHome }: { game: GameState; onHome: () => void }) {
         <p>{result.detail}</p>
       </ResultNotice>
       <button className="primary" onClick={onHome}>처음으로</button>
+    </div>
+  )
+}
+
+function GameCancelled({ endedByMe, onHome }: { endedByMe: boolean; onHome: () => void }) {
+  return (
+    <div className="center-action game-cancelled">
+      <p className="eyebrow">게임 종료</p>
+      <ResultNotice title="게임이 종료되었습니다.">
+        <p>{endedByMe ? '게임을 종료했습니다.' : '상대가 게임을 종료했습니다.'}</p>
+      </ResultNotice>
+      <button className="primary" type="button" onClick={onHome}>처음으로</button>
     </div>
   )
 }

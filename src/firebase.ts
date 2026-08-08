@@ -20,6 +20,7 @@ const db = app ? getFirestore(app) : null
 export interface OnlinePlayer {
   uid: string
   nickname: string
+  slot?: 0 | 1
   warningOn: boolean
   ready: boolean
   confirmed: boolean
@@ -32,6 +33,7 @@ export interface OnlineRoom {
   round: number
   players: OnlinePlayer[]
   winnerUid: string | null
+  endedByUid?: string | null
   action: Action | null
   result: 'truth' | 'false' | 'tie' | null
   message: string
@@ -104,6 +106,7 @@ export const submitOnlineBet = (code: string, amount: number) => call<{ ok: true
 export const chooseOnlineAction = (code: string, action: Action) => call<{ ok: true }>('chooseAction', { code, choice: action })
 export const finishOnlineQuestion = (code: string) => call<{ ok: true }>('finishQuestion', { code })
 export const submitOnlineTruth = (code: string, guess: Rank[]) => call<{ correct: boolean }>('submitTruth', { code, guess })
+export const leaveOnlineRoom = (code: string) => call<{ ok: true; outcome: 'left_lobby' | 'cancelled_game' | 'already_done' }>('leaveRoom', { code })
 
 export function watchOnlineRoom(code: string, onRoom: (room: OnlineRoom) => void, onError: (error: Error) => void) {
   if (!db) return () => undefined

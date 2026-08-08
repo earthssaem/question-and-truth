@@ -54,6 +54,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .lobby-shell {
+  position: relative;
   min-height: 100vh;
   display: grid;
   place-items: center;
@@ -303,17 +304,110 @@ input:focus, select:focus {
   min-height: 34px;
   margin: 0 auto;
   padding: 0 6px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) auto minmax(72px, 1fr);
   align-items: center;
-  justify-content: center;
   color: var(--muted);
   font-size: 11px;
   font-weight: 550;
 }
 
-.game-meta { display: inline-flex; align-items: center; gap: 7px; }
+.game-meta { grid-column: 2; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
 .game-meta b { color: #ded7cb; font-size: 12px; }
 .game-meta i { color: #817d73; font-style: normal; }
+
+.exit-button {
+  min-width: 72px;
+  min-height: 40px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #aaa498;
+  font-size: 11px;
+  font-weight: 650;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.exit-button:hover { background: #ffffff0a; color: var(--ivory); }
+.game-header .exit-button { grid-column: 3; justify-self: end; }
+.lobby-exit-button { position: absolute; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); }
+
+.exit-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  background: #11120ed1;
+}
+
+.exit-modal {
+  width: min(390px, 100%);
+  padding: 25px;
+  border: 1px solid #ffffff14;
+  border-radius: 14px;
+  background: #3c3b32;
+  text-align: center;
+  box-shadow: 0 18px 48px #090a0773, inset 0 1px #ffffff0d;
+}
+
+.exit-modal h2 {
+  margin: 0;
+  color: var(--ivory);
+  font-size: 22px;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.exit-modal > p:not(.exit-modal-error) {
+  margin: 10px 0 22px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.exit-modal-error {
+  margin: -8px 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #ef8983;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.exit-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.exit-modal-actions .secondary,
+.exit-modal-actions .primary,
+.exit-confirm-danger {
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.exit-confirm-danger {
+  border: 1px solid #a85850;
+  border-radius: 10px;
+  background: #844a45;
+  color: #fff2ec;
+  font-weight: 700;
+}
+
+.exit-confirm-danger:hover:not(:disabled) { border-color: #c46a62; background: #96534d; }
+.exit-confirm-danger:disabled { cursor: not-allowed; opacity: .5; }
 
 .scoreboard {
   width: min(780px, 100%);
@@ -746,6 +840,11 @@ input:focus, select:focus {
   font-weight: 750;
 }
 
+.game-cancelled .result-notice {
+  justify-items: center;
+  text-align: center;
+}
+
 .action-grid {
   width: min(600px, 100%);
   display: grid;
@@ -983,6 +1082,7 @@ input:focus, select:focus {
   .game-header { min-height: 32px; }
   .game-meta { gap: 6px; font-size: 10px; }
   .game-meta b { font-size: 11px; }
+  .exit-button { min-width: 68px; min-height: 40px; padding: 0 5px; font-size: 10px; }
 
   .scoreboard {
     min-height: 78px;
@@ -1083,6 +1183,9 @@ input:focus, select:focus {
   .stepper { grid-template-columns: 46px minmax(132px, auto) 46px; gap: 8px; }
   .stepper button { width: 46px; height: 46px; }
   .bet-amount { padding: 9px 12px; }
+  .exit-modal-backdrop { padding: 14px; }
+  .exit-modal { padding: 22px 18px; }
+  .exit-modal h2 { font-size: 20px; }
   .question-actions { width: 100%; flex-direction: column; }
   .question-actions .primary, .question-actions .secondary { width: 100%; }
 }

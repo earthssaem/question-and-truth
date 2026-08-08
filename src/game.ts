@@ -3,7 +3,7 @@ export const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q
 
 export type Suit = (typeof SUITS)[number]
 export type Rank = (typeof RANKS)[number]
-export type Phase = 'lobby' | 'card_selection' | 'betting' | 'bet_result' | 'action_choice' | 'question' | 'truth' | 'round_end' | 'game_over'
+export type Phase = 'lobby' | 'card_selection' | 'betting' | 'bet_result' | 'action_choice' | 'question' | 'truth' | 'round_end' | 'game_over' | 'game_cancelled'
 export type Action = 'QUESTION' | 'TRUTH'
 
 export interface Card {
@@ -32,6 +32,7 @@ export interface GameState {
   bet: number
   opponentBet: number | null
   winnerIndex: 0 | 1 | null
+  endedByIndex: 0 | 1 | null
   action: Action | null
   truthGuess: Rank[]
   result: 'truth' | 'false' | 'tie' | null
@@ -97,6 +98,7 @@ export function makeInitialGame(): GameState {
     bet: 0,
     opponentBet: null,
     winnerIndex: null,
+    endedByIndex: null,
     action: null,
     truthGuess: Array(8).fill('A') as Rank[],
     result: null,
@@ -121,6 +123,7 @@ export function awardAndAdvance(
     bet: 0,
     opponentBet: null,
     winnerIndex: null,
+    endedByIndex: null,
     action: null,
     truthGuess: Array(8).fill('A') as Rank[],
     result,

@@ -10,6 +10,7 @@ type Card = { suit: Suit; rank: Rank }
 type PublicPlayer = {
   uid: string
   nickname: string
+  slot?: 0 | 1
   warningOn: boolean
   ready: boolean
   confirmed: boolean
@@ -80,8 +81,8 @@ function makeCode() {
   return Array.from({ length: 6 }, () => alphabet[randomInt(alphabet.length)]).join('')
 }
 
-function makePublicPlayer(uid: string, nickname: string): PublicPlayer {
-  return { uid, nickname, warningOn: false, ready: false, confirmed: false, betSubmitted: false }
+function makePublicPlayer(uid: string, nickname: string, slot: 0 | 1): PublicPlayer & { slot: 0 | 1 } {
+  return { uid, nickname, slot, warningOn: false, ready: false, confirmed: false, betSubmitted: false }
 }
 
 function makePrivatePlayer(): PrivatePlayer {
@@ -96,6 +97,42 @@ function requireMember(room: DocumentData, uid: string) {
 
 function patchPlayer(players: PublicPlayer[], uid: string, patch: Partial<PublicPlayer>) {
   return players.map((player) => player.uid === uid ? { ...player, ...patch } : player)
+}
+
+function normalizePlayerSlots(players: PublicPlayer[]): Array<PublicPlayer & { slot: 0 | 1 }> {
+  return players.map((player, index) => ({
+    ...player,
+    slot: player.slot === 0 || player.slot === 1 ? player.slot : index as 0 | 1,
+  })).sort((left, right) => left.slot - right.slot)
+}
+
+export function planRoomExit(room: DocumentData, uid: string) {
+  const players = normalizePlayerSlots(room.players as PublicPlayer[])
+  const member = players.some((player) => player.uid === uid)
+  const leftUids = Array.isArray(room.leftUids) ? room.leftUids as string[] : []
+
+  if (!member) {
+    if (leftUids.includes(uid)) return { kind: 'already_left' as const }
+    fail('permission-denied', '이 방의 플레이어가 아닙니다.', 403)
+  }
+
+  if (room.phase === 'game_cancelled' || room.phase === 'game_over') {
+    return { kind: 'already_ended' as const }
+  }
+
+  if (room.phase === 'lobby') {
+    const remainingPlayers = players
+      .filter((player) => player.uid !== uid)
+      .map((player) => ({ ...player, ready: false, confirmed: false, betSubmitted: false }))
+    return {
+      kind: 'leave_lobby' as const,
+      players: remainingPlayers,
+      playerUids: remainingPlayers.map((player) => player.uid),
+      closed: remainingPlayers.length === 0,
+    }
+  }
+
+  return { kind: 'cancel_game' as const }
 }
 
 function privateRef(db: Firestore, code: string, uid: string) {
@@ -163,9 +200,12 @@ export async function createRoom(db: Firestore, uid: string, nicknameValue: unkn
       phase: 'lobby',
       round: 1,
       settledRound: 0,
-      players: [makePublicPlayer(uid, nickname)],
+      players: [makePublicPlayer(uid, nickname, 0)],
       playerUids: [uid],
+      leftUids: [],
+      closed: false,
       winnerUid: null,
+      endedByUid: null,
       action: null,
       result: null,
       message: '상대를 기다리는 중입니다.',
@@ -191,13 +231,23 @@ export async function joinRoom(db: Firestore, uid: string, codeValue: unknown, n
     if (!snapshot.exists) fail('not-found', '방을 찾을 수 없습니다.', 404)
     const room = snapshot.data()!
     if ((room.playerUids as string[]).includes(uid)) return
-    if ((room.players as PublicPlayer[]).length >= 2 || room.phase !== 'lobby') {
+    const currentPlayers = normalizePlayerSlots(room.players as PublicPlayer[])
+    if (room.closed || currentPlayers.length >= 2 || room.phase !== 'lobby') {
       fail('failed-precondition', '입장할 수 없는 방입니다.')
     }
+    const occupiedSlots = new Set(currentPlayers.map((player) => player.slot))
+    const slot: 0 | 1 = occupiedSlots.has(0) ? 1 : 0
+    const players = [
+      ...currentPlayers.map((player) => ({ ...player, ready: false })),
+      makePublicPlayer(uid, nickname, slot),
+    ].sort((left, right) => left.slot - right.slot)
     tx.create(privateRef(db, code, uid), makePrivatePlayer())
     tx.update(roomRef, {
-      players: [...room.players, makePublicPlayer(uid, nickname)],
-      playerUids: [...room.playerUids, uid],
+      players,
+      playerUids: players.map((player) => player.uid),
+      leftUids: FieldValue.arrayRemove(uid),
+      closed: false,
+      endedByUid: null,
       message: '두 플레이어가 입장했습니다.',
     })
   })
@@ -405,6 +455,50 @@ export async function submitTruth(db: Firestore, uid: string, codeValue: unknown
   return { correct }
 }
 
+export async function leaveRoom(db: Firestore, uid: string, codeValue: unknown) {
+  const code = cleanRoomCode(codeValue)
+  let outcome: 'left_lobby' | 'cancelled_game' | 'already_done' = 'already_done'
+
+  await db.runTransaction(async (tx) => {
+    const roomRef = db.doc(`rooms/${code}`)
+    const snapshot = await tx.get(roomRef)
+    const room = snapshot.data()
+    if (!room) fail('not-found', '방을 찾을 수 없습니다.', 404)
+
+    const plan = planRoomExit(room, uid)
+    if (plan.kind === 'already_left' || plan.kind === 'already_ended') return
+
+    if (plan.kind === 'leave_lobby') {
+      tx.delete(privateRef(db, code, uid))
+      tx.update(roomRef, {
+        players: plan.players,
+        playerUids: plan.playerUids,
+        leftUids: FieldValue.arrayUnion(uid),
+        closed: plan.closed,
+        winnerUid: null,
+        endedByUid: null,
+        action: null,
+        result: null,
+        message: plan.closed ? '종료된 방입니다.' : '상대를 기다리는 중입니다.',
+      })
+      outcome = 'left_lobby'
+      return
+    }
+
+    tx.update(roomRef, {
+      phase: 'game_cancelled',
+      endedByUid: uid,
+      winnerUid: null,
+      action: null,
+      result: null,
+      message: '상대가 게임을 종료했습니다.',
+    })
+    outcome = 'cancelled_game'
+  })
+
+  return { ok: true, outcome }
+}
+
 export async function executeGameAction(db: Firestore, uid: string, payload: Record<string, unknown>) {
   switch (payload.action) {
     case 'createRoom': return createRoom(db, uid, payload.nickname)
@@ -415,6 +509,7 @@ export async function executeGameAction(db: Firestore, uid: string, payload: Rec
     case 'chooseAction': return chooseAction(db, uid, payload.code, payload.choice)
     case 'finishQuestion': return finishQuestion(db, uid, payload.code)
     case 'submitTruth': return submitTruth(db, uid, payload.code, payload.guess)
+    case 'leaveRoom': return leaveRoom(db, uid, payload.code)
     default: fail('invalid-argument', '지원하지 않는 요청입니다.')
   }
 }
