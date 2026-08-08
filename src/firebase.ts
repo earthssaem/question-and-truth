@@ -60,9 +60,40 @@ async function call<TOutput>(action: string, data: Record<string, unknown>): Pro
     },
     body: JSON.stringify({ action, ...data }),
   })
-  const result = await response.json() as TOutput & { error?: { message?: string } }
-  if (!response.ok) throw new Error(result.error?.message || '서버 요청을 처리하지 못했습니다.')
-  return result
+  return readApiResponse<TOutput>(response)
+}
+
+export async function readApiResponse<TOutput>(response: Response): Promise<TOutput> {
+  const contentType = response.headers.get('content-type') ?? ''
+  let payload: unknown
+
+  if (contentType.includes('application/json')) {
+    try {
+      payload = await response.json()
+    } catch {
+      payload = null
+    }
+  } else {
+    payload = await response.text()
+  }
+
+  if (!response.ok) {
+    const jsonMessage = payload && typeof payload === 'object' && 'error' in payload
+      ? (payload as { error?: { message?: unknown } }).error?.message
+      : null
+    const textMessage = typeof payload === 'string' && !/<(?:!doctype|html)/i.test(payload)
+      ? payload.trim().slice(0, 300)
+      : ''
+    const status = `${response.status}${response.statusText ? ` ${response.statusText}` : ''}`
+    throw new Error(typeof jsonMessage === 'string' && jsonMessage.trim()
+      ? jsonMessage
+      : textMessage || `서버 요청에 실패했습니다. (${status})`)
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('서버 응답 형식이 올바르지 않습니다.')
+  }
+  return payload as TOutput
 }
 
 export const createOnlineRoom = (nickname: string) => call<{ code: string }>('createRoom', { nickname })
