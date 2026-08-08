@@ -57,7 +57,7 @@ function CardFace({ card, selected, compact, onClick }: { card: Card; selected?:
 }
 
 function ChipIndicator({ tokens }: { tokens: number }) {
-  return <span className="chip-indicator"><i className="chip-token" aria-hidden="true" /><strong>{tokens}</strong> CHIP</span>
+  return <span className="chip-indicator"><i className="chip-token" aria-hidden="true" /><strong>{tokens}</strong>칩</span>
 }
 
 function WarningLight({ on }: { on: boolean }) {
@@ -65,7 +65,7 @@ function WarningLight({ on }: { on: boolean }) {
     <span className={`warning-indicator ${on ? 'warning' : ''}`} aria-label={`칩 경고등 ${on ? '켜짐' : '꺼짐'}`}>
       <span>칩 경고등</span>
       <i className="status-light" aria-hidden="true" />
-      <b>{on ? 'ON' : 'OFF'}</b>
+      <b>{on ? '켜짐' : '꺼짐'}</b>
     </span>
   )
 }
@@ -75,7 +75,7 @@ function PlayerPanel({ player, opponent, active }: { player: GameState['players'
     <div className={`player-panel ${opponent ? 'opponent' : ''} ${active ? 'active' : ''}`}>
       <div className="player-identity">
         <strong>{player.nickname}</strong>
-        <small>{opponent ? '상대 플레이어' : '나'}</small>
+        <small>{opponent ? '상대' : '나'}</small>
       </div>
       <div className="player-meta">
         {active && <span className="turn-status"><i />현재 행동</span>}
@@ -272,7 +272,7 @@ function App() {
   }
 
   const phaseLabel = useMemo(() => ({
-    lobby: 'LOBBY', card_selection: 'CARD SELECTION', betting: 'SECRET BET', bet_result: 'BET RESULT', action_choice: '', question: '질문', truth: '진실', round_end: 'ROUND END', game_over: 'GAME OVER',
+    lobby: '대기실', card_selection: '카드 선택', betting: '비공개 베팅', bet_result: '베팅 결과', action_choice: '', question: '질문', truth: '진실', round_end: '라운드 종료', game_over: '게임 종료',
   })[game.phase], [game.phase])
 
   if (view === 'home') {
@@ -280,7 +280,7 @@ function App() {
       <main className="home-shell">
         <section className="home-panel">
           <div className="brand-mark">Q<span>&</span>T</div>
-          <p className="eyebrow">TWO PLAYER TABLE GAME</p>
+          <p className="eyebrow">2인용 테이블 게임</p>
           <h1>질문과 진실</h1>
           <p className="home-copy">카드를 숨기고, 칩을 걸고, 상대의 진실을 꿰뚫어 보세요.</p>
           <label className="field-label" htmlFor="nickname">닉네임</label>
@@ -301,7 +301,7 @@ function App() {
     return (
       <main className="lobby-shell">
         <section className="lobby-panel">
-          <p className="eyebrow">PRIVATE ROOM</p>
+          <p className="eyebrow">비공개 방</p>
           <h1>상대를 기다리는 중</h1>
           <div className="room-code"><span>방 코드</span><strong>{roomCode}</strong><button className="icon-button" title="방 코드 복사" type="button" onClick={() => { navigator.clipboard?.writeText(roomCode); setCopied(true) }}>{copied ? <Check /> : <Clipboard />}</button></div>
           <div className="versus">
@@ -330,10 +330,10 @@ function App() {
       </section>
       <section className={`stage stage-${game.phase}`}>
         {game.phase === 'card_selection' && (me.confirmed
-          ? <Waiting text="상대가 카드 배치를 확정하기를 기다리고 있습니다." />
+          ? <Waiting text="상대가 카드 배열을 정하는 중..." />
           : <CardSelection selected={game.selectedCards} onToggle={toggleCard} onConfirm={confirmCards} />)}
         {game.phase === 'betting' && (me.betSubmitted
-          ? <Waiting text="상대가 베팅을 완료하기를 기다리고 있습니다." />
+          ? <Waiting text="상대가 베팅하는 중..." />
           : <Betting game={game} setGame={setGame} onConfirm={confirmBet} />)}
         {game.phase === 'bet_result' && <Waiting text={game.message} />}
         {game.phase === 'action_choice' && (game.winnerIndex === game.myIndex
@@ -390,16 +390,13 @@ function Betting({ game, setGame, onConfirm }: { game: GameState; setGame: React
   return (
     <div className="center-action betting-panel">
       {game.result === 'tie' && (
-        <ResultNotice title="베팅 동점" tone="gold">
-          <p>두 플레이어의 베팅이 같습니다.</p>
-          <span>행동 없이 라운드가 종료되었습니다.</span>
-          <b>두 플레이어 +2 CHIP</b>
-          <small>ROUND {game.round}</small>
-        </ResultNotice>
+        <div className="previous-result" role="status">
+          <strong>ROUND {Math.max(1, game.round - 1)} · 동점!</strong>
+          <span>행동 없이 라운드 종료 · 두 플레이어 +2칩</span>
+        </div>
       )}
-      <p className="eyebrow">SECRET BET</p>
-      <h2>몇 개의 칩을 베팅할까요?</h2>
-      <p>보유한 칩 안에서 원하는 수를 고르세요.</p>
+      <h2>몇 개의 칩을 걸까요?</h2>
+      <p>0개부터 보유한 칩까지 선택할 수 있습니다.</p>
       <div className="stepper">
         <button type="button" title="베팅 감소" disabled={bet === 0} onClick={() => setGame((current) => ({ ...current, bet: Math.max(0, current.bet - 1) }))}><Minus /></button>
         <div className="bet-amount">
@@ -407,17 +404,17 @@ function Betting({ game, setGame, onConfirm }: { game: GameState; setGame: React
           <select className="bet-select" aria-label="베팅할 칩 수" value={bet} onChange={(event) => setGame((current) => ({ ...current, bet: Number(event.target.value) }))}>
             {options.map((amount) => <option value={amount} key={amount}>{amount}</option>)}
           </select>
-          <span>CHIP</span>
+          <span>칩</span>
         </div>
         <button type="button" title="베팅 증가" disabled={bet === maxBet} onClick={() => setGame((current) => ({ ...current, bet: Math.min(maxBet, current.bet + 1) }))}><Plus /></button>
       </div>
-      <button className="primary" onClick={onConfirm}>베팅 확정</button>
+      <button className="primary" onClick={onConfirm}>이대로 베팅</button>
     </div>
   )
 }
 
 function ActionTile({ title, description, onClick }: { title: string; description: string; onClick: () => void }) {
-  return <button className="action-tile" onClick={onClick}><strong>{title}</strong><small>{description}</small></button>
+  return <button className="action-tile" type="button" onClick={onClick}><strong>{title}</strong><small>{description}</small></button>
 }
 
 function ResultNotice({ title, tone = 'neutral', children }: { title: string; tone?: 'neutral' | 'gold' | 'danger'; children?: React.ReactNode }) {
@@ -425,11 +422,11 @@ function ResultNotice({ title, tone = 'neutral', children }: { title: string; to
 }
 
 function ActionChoice({ onChoose }: { onChoose: (action: Action) => void }) {
-  return <div className="center-action"><ResultNotice title="베팅 승리!" tone="gold"><p>이번 라운드에서 무엇을 할까요?</p></ResultNotice><div className="action-grid"><ActionTile title="질문" description="상대에게 직접 질문하기" onClick={() => onChoose('QUESTION')} /><ActionTile title="진실" description="상대 카드 배열 선언하기" onClick={() => onChoose('TRUTH')} /></div></div>
+  return <div className="center-action"><ResultNotice title="베팅 승리!" tone="gold"><p>이번 라운드, 무엇을 할까요?</p></ResultNotice><div className="action-grid"><ActionTile title="질문" description="상대에게 직접 질문하기" onClick={() => onChoose('QUESTION')} /><ActionTile title="진실" description="상대 카드 배열 선언하기" onClick={() => onChoose('TRUTH')} /></div></div>
 }
 
 function BetLoss() {
-  return <div className="center-action"><ResultNotice title="상대가 베팅에서 승리했습니다."><p>상대의 선택을 기다리고 있습니다.</p></ResultNotice></div>
+  return <div className="center-action"><ResultNotice title="상대가 베팅에서 이겼어요."><p>상대가 고르는 중...</p></ResultNotice></div>
 }
 
 function Question({ onDone }: { onDone: () => void }) {
@@ -441,13 +438,13 @@ function Truth({ guess, onChange, onDeclare }: { guess: Rank[]; onChange: (index
 }
 
 function GameOver({ onHome }: { onHome: () => void }) {
-  return <div className="center-action"><p className="eyebrow">GAME OVER</p><ResultNotice title="정답입니다." tone="gold"><p>상대의 카드 배열을 정확히 알아냈습니다.</p></ResultNotice><button className="primary" onClick={onHome}>처음으로</button></div>
+  return <div className="center-action"><p className="eyebrow">게임 종료</p><ResultNotice title="정답입니다." tone="gold"><p>상대의 카드 배열을 정확히 알아냈습니다.</p></ResultNotice><button className="primary" onClick={onHome}>처음으로</button></div>
 }
 
 function Waiting({ text }: { text: string }) { return <div className="center-action waiting"><ResultNotice title={text} /></div> }
 
 function MyCards({ cards }: { cards: Card[] }) {
-  return <section className="my-cards"><p className="eyebrow">MY CARDS</p><div className="hand">{cards.map((card, index) => <div key={`${cardId(card)}-${index}`}><small>{index + 1}</small><CardFace card={card} compact /></div>)}</div></section>
+  return <section className="my-cards"><p className="eyebrow">내 카드</p><div className="hand">{cards.map((card, index) => <div key={`${cardId(card)}-${index}`}><small>{index + 1}</small><CardFace card={card} compact /></div>)}</div></section>
 }
 
 export default App
