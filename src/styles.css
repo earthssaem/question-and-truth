@@ -345,7 +345,7 @@ input:focus, select:focus {
   box-shadow: 0 7px 18px #18191159, inset 4px 0 var(--gold);
 }
 
-.player-panel.opponent { text-align: right; }
+.player-panel.player-two { text-align: right; }
 
 .player-identity {
   min-width: 0;
@@ -363,13 +363,21 @@ input:focus, select:focus {
   font-size: 17px;
 }
 
+.game-player-role {
+  flex: 0 0 auto;
+  color: #aeb4a4;
+  font-size: 9px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
 .player-identity small {
   flex: 0 0 auto;
   color: #aaa397;
   font-size: 11px;
 }
 
-.player-panel.opponent .player-identity { justify-content: flex-end; }
+.player-panel.player-two .player-identity { justify-content: flex-end; }
 
 .player-meta {
   grid-column: 1 / -1;
@@ -379,7 +387,7 @@ input:focus, select:focus {
   gap: 10px;
 }
 
-.player-panel.opponent .player-meta { justify-content: flex-end; }
+.player-panel.player-two .player-meta { justify-content: flex-end; }
 
 .turn-status {
   display: inline-flex;
@@ -726,6 +734,18 @@ input:focus, select:focus {
 .result-notice b { margin-top: 10px; color: var(--gold); font-size: 12px; }
 .result-notice small { margin-top: 15px; color: var(--ivory); font: 600 11px 'Roboto Mono', Consolas, monospace; }
 
+.game-over .result-notice {
+  justify-items: center;
+  text-align: center;
+}
+
+.game-over .game-over-answer {
+  margin-top: 10px;
+  color: var(--ivory);
+  font-size: 15px;
+  font-weight: 750;
+}
+
 .action-grid {
   width: min(600px, 100%);
   display: grid;
@@ -857,6 +877,7 @@ input:focus, select:focus {
 
   .player-panel { padding: 10px; gap: 7px; }
   .player-identity { gap: 4px; }
+  .game-player-role { font-size: 8px; }
   .player-identity strong { font-size: 14px; }
   .player-identity small { font-size: 10px; }
   .turn-status { display: none; }
@@ -923,6 +944,8 @@ input:focus, select:focus {
   h1 { font-size: 36px; }
 
   .player-panel { padding: 9px 8px; }
+  .player-identity { gap: 3px; }
+  .game-player-role { font-size: 7px; }
   .player-identity strong { font-size: 13px; }
   .player-identity small { font-size: 9px; }
   .warning-indicator { gap: 4px; font-size: 10px; }

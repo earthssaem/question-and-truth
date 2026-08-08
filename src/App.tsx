@@ -9,8 +9,10 @@ import {
   isActionOwner,
   isJoinedOpponentId,
   isValidOrder,
+  makeGameOverResult,
   makeBetOptions,
   makeInitialGame,
+  playerSlotLabel,
   resolveLocalBet,
   sameRanks,
   suitSymbol,
@@ -72,16 +74,17 @@ function WarningLight({ on }: { on: boolean }) {
   )
 }
 
-function PlayerPanel({ player, opponent, active }: { player: GameState['players'][number]; opponent?: boolean; active?: boolean }) {
+function PlayerPanel({ player, slot, isMe, active }: { player: GameState['players'][number]; slot: 0 | 1; isMe: boolean; active?: boolean }) {
   return (
-    <div className={`player-panel ${opponent ? 'opponent' : ''} ${active ? 'active' : ''}`}>
+    <div className={`player-panel ${slot === 1 ? 'player-two' : ''} ${active ? 'active' : ''}`}>
       <div className="player-identity">
+        <span className="game-player-role">{playerSlotLabel(slot)}</span>
         <strong>{player.nickname}</strong>
-        <small>({opponent ? '상대' : '나'})</small>
+        <small>({isMe ? '나' : '상대'})</small>
       </div>
       <div className="player-meta">
         {active && <span className="turn-status"><i />현재 행동</span>}
-        {!opponent ? <ChipIndicator tokens={player.tokens} /> : <WarningLight on={player.warningOn} />}
+        {isMe ? <ChipIndicator tokens={player.tokens} /> : <WarningLight on={player.warningOn} />}
       </div>
     </div>
   )
@@ -353,9 +356,9 @@ function App() {
         <span className="game-meta"><b>{game.round}라운드</b><i>·</i>방 코드 {roomCode}</span>
       </header>
       <section className="scoreboard">
-        <PlayerPanel player={me} active={actionPhase && myAction} />
+        <PlayerPanel player={game.players[0]} slot={0} isMe={game.myIndex === 0} active={actionPhase && game.winnerIndex === 0} />
         <span className="versus-small">VS</span>
-        <PlayerPanel player={opponent} opponent active={actionPhase && game.winnerIndex !== null && game.winnerIndex !== game.myIndex} />
+        <PlayerPanel player={game.players[1]} slot={1} isMe={game.myIndex === 1} active={actionPhase && game.winnerIndex === 1} />
       </section>
       <section className={`stage stage-${game.phase}`}>
         {game.phase === 'card_selection' && (me.confirmed
@@ -375,7 +378,7 @@ function App() {
           ? <Truth guess={game.truthGuess} onChange={changeGuess} onDeclare={declareTruth} />
           : <Waiting text="상대가 진실에 도전하는 중..." />)}
         {game.phase === 'round_end' && <Waiting text={game.message} />}
-        {game.phase === 'game_over' && <GameOver onHome={() => { clearOnlineSession(); setRoomCode(''); setGame(makeInitialGame()); setView('home') }} />}
+        {game.phase === 'game_over' && <GameOver game={game} onHome={() => { clearOnlineSession(); setRoomCode(''); setGame(makeInitialGame()); setView('home') }} />}
       </section>
       {game.phase !== 'card_selection' && game.myCards.length > 0 && <MyCards cards={game.myCards} />}
     </main>
@@ -476,8 +479,18 @@ function Truth({ guess, onChange, onDeclare }: { guess: Rank[]; onChange: (index
   return <div className="truth-panel"><div className="stage-heading"><p>진실</p><h2>상대 카드의 값과 순서를 선언하세요</h2></div><div className="truth-grid">{guess.map((rank, index) => <label key={index}><span>{index + 1}</span><select value={rank} onChange={(event) => onChange(index, event.target.value as Rank)}>{RANKS.map((item) => <option key={item}>{item}</option>)}</select></label>)}</div><button className="primary" onClick={onDeclare}>진실 선언</button></div>
 }
 
-function GameOver({ onHome }: { onHome: () => void }) {
-  return <div className="center-action"><p className="eyebrow">게임 종료</p><ResultNotice title="정답입니다." tone="gold"><p>상대의 카드 배열을 정확히 알아냈습니다.</p></ResultNotice><button className="primary" onClick={onHome}>처음으로</button></div>
+function GameOver({ game, onHome }: { game: GameState; onHome: () => void }) {
+  const result = makeGameOverResult(game.players, game.myIndex, game.winnerIndex)
+  return (
+    <div className="center-action game-over">
+      <p className="eyebrow">게임 종료</p>
+      <ResultNotice title={result.winnerText} tone="gold">
+        {result.isWinner && <span className="game-over-answer">정답입니다.</span>}
+        <p>{result.detail}</p>
+      </ResultNotice>
+      <button className="primary" onClick={onHome}>처음으로</button>
+    </div>
+  )
 }
 
 function Waiting({ text }: { text: string }) { return <div className="center-action waiting"><ResultNotice title={text} /></div> }

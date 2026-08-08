@@ -394,6 +394,7 @@ export async function submitTruth(db: Firestore, uid: string, codeValue: unknown
     if (correct) {
       tx.update(roomRef, {
         phase: 'game_over',
+        winnerUid: uid,
         result: 'truth',
         message: '정답입니다. 게임이 종료되었습니다.',
       })

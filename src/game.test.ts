@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { awardAndAdvance, isActionOwner, isJoinedOpponentId, isValidOrder, makeBetOptions, makeInitialGame, resolveLocalBet, sameRanks, toggleSelectedCard, type Card, type GameState } from './game'
+import { awardAndAdvance, isActionOwner, isJoinedOpponentId, isValidOrder, makeBetOptions, makeGameOverResult, makeInitialGame, playerSlotLabel, resolveLocalBet, sameRanks, toggleSelectedCard, type Card, type GameState } from './game'
 
 describe('game rules', () => {
   it('같은 무늬의 카드는 오름차순으로만 배치한다', () => {
@@ -153,5 +153,24 @@ describe('game rules', () => {
     expect(isJoinedOpponentId('waiting')).toBe(false)
     expect(isJoinedOpponentId('opponent')).toBe(false)
     expect(isJoinedOpponentId('firebase-player-uid')).toBe(true)
+  })
+
+  it.each([
+    { winnerIndex: 0 as const, myIndex: 0 as const, isWinner: true, detail: '상대의 카드 배열을 정확히 맞혔습니다.' },
+    { winnerIndex: 0 as const, myIndex: 1 as const, isWinner: false, detail: '상대가 내 카드 배열을 정확히 맞혔습니다.' },
+    { winnerIndex: 1 as const, myIndex: 0 as const, isWinner: false, detail: '상대가 내 카드 배열을 정확히 맞혔습니다.' },
+    { winnerIndex: 1 as const, myIndex: 1 as const, isWinner: true, detail: '상대의 카드 배열을 정확히 맞혔습니다.' },
+  ])('PLAYER $winnerIndex TRUTH 성공을 각 브라우저 관점에 맞게 표시한다', ({ winnerIndex, myIndex, isWinner, detail }) => {
+    const initial = makeInitialGame()
+    const players = initial.players.map((player, index) => ({
+      ...player,
+      nickname: index === 0 ? '연경' : '철수',
+    })) as GameState['players']
+    const result = makeGameOverResult(players, myIndex, winnerIndex)
+
+    expect(playerSlotLabel(winnerIndex)).toBe(`PLAYER ${winnerIndex + 1}`)
+    expect(result.winnerText).toBe(`${playerSlotLabel(winnerIndex)} · ${players[winnerIndex].nickname} 승리!`)
+    expect(result.isWinner).toBe(isWinner)
+    expect(result.detail).toBe(detail)
   })
 })

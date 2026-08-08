@@ -132,6 +132,33 @@ export function isActionOwner(myIndex: 0 | 1, winnerIndex: 0 | 1 | null) {
   return winnerIndex !== null && winnerIndex === myIndex
 }
 
+export function playerSlotLabel(index: 0 | 1) {
+  return `PLAYER ${index + 1}`
+}
+
+export function makeGameOverResult(
+  players: GameState['players'],
+  myIndex: 0 | 1,
+  winnerIndex: 0 | 1 | null,
+) {
+  if (winnerIndex === null) {
+    return {
+      winnerText: '게임 종료',
+      isWinner: false,
+      detail: '게임 결과를 확인할 수 없습니다.',
+    }
+  }
+
+  const isWinner = winnerIndex === myIndex
+  return {
+    winnerText: `${playerSlotLabel(winnerIndex)} · ${players[winnerIndex].nickname} 승리!`,
+    isWinner,
+    detail: isWinner
+      ? '상대의 카드 배열을 정확히 맞혔습니다.'
+      : '상대가 내 카드 배열을 정확히 맞혔습니다.',
+  }
+}
+
 export function isJoinedOpponentId(id: string) {
   return id !== 'waiting' && id !== 'opponent'
 }
