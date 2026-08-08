@@ -280,7 +280,7 @@ function App() {
           <header className="home-intro">
             <div className="suit-motif" aria-hidden="true"><span>♠</span><span>♥</span><span>♦</span><span>♣</span></div>
             <h1>질문과 진실</h1>
-            <p className="home-copy">카드를 숨기고, 칩을 걸고, 상대의 진실을 찾아보세요.</p>
+            <p className="home-copy">데블스플랜2 FINAL 3회전 게임</p>
           </header>
           <div className="home-actions">
             <div className="home-group player-setup">
