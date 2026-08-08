@@ -34,6 +34,8 @@ import {
 } from './firebase'
 
 type View = 'home' | 'lobby' | 'game'
+const SESSION_ROOM_KEY = 'question-and-truth:room'
+const SESSION_NICKNAME_KEY = 'question-and-truth:nickname'
 
 const randomCode = () => Math.random().toString(36).slice(2, 8).toUpperCase()
 
@@ -76,6 +78,11 @@ function App() {
   const me = game.players[game.myIndex]
   const opponent = game.players[game.myIndex === 0 ? 1 : 0]
 
+  const clearOnlineSession = () => {
+    localStorage.removeItem(SESSION_ROOM_KEY)
+    localStorage.removeItem(SESSION_NICKNAME_KEY)
+  }
+
   const applyOnlineRoom = (room: OnlineRoom, uid: string) => {
     const myIndex = Math.max(0, room.players.findIndex((player) => player.uid === uid)) as 0 | 1
     setGame((current) => {
@@ -105,6 +112,26 @@ function App() {
     setView(room.phase === 'lobby' ? 'lobby' : 'game')
   }
 
+  useEffect(() => {
+    if (!firebaseEnabled) return
+    const savedRoom = localStorage.getItem(SESSION_ROOM_KEY) ?? ''
+    const savedNickname = localStorage.getItem(SESSION_NICKNAME_KEY) ?? ''
+    if (!/^[A-Z0-9]{6}$/.test(savedRoom)) return
+
+    let active = true
+    setNickname(savedNickname)
+    void ensureAnonymousUser()
+      .then((user) => {
+        if (!active) return
+        setOnlineUid(user.uid)
+        setRoomCode(savedRoom)
+      })
+      .catch((reason) => {
+        if (active) setError(reason instanceof Error ? reason.message : '방에 다시 연결하지 못했습니다.')
+      })
+    return () => { active = false }
+  }, [])
+
   const enterLobby = async (code?: string) => {
     if (!nickname.trim()) return
     setError('')
@@ -119,6 +146,8 @@ function App() {
         setError(reason instanceof Error ? reason.message : '방에 연결하지 못했습니다.')
         return
       }
+      localStorage.setItem(SESSION_ROOM_KEY, destination)
+      localStorage.setItem(SESSION_NICKNAME_KEY, nickname.trim())
     }
     setRoomCode(destination)
     setGame((current) => ({
@@ -130,14 +159,22 @@ function App() {
 
   useEffect(() => {
     if (!firebaseEnabled || !roomCode || !onlineUid) return
-    const stopRoom = watchOnlineRoom(roomCode, (room) => applyOnlineRoom(room, onlineUid), (reason) => setError(reason.message))
+    const handleConnectionError = (reason: Error) => {
+      setError(reason.message)
+      if (reason.message.includes('찾을 수 없습니다') || reason.message.includes('permission')) {
+        clearOnlineSession()
+        setRoomCode('')
+        setView('home')
+      }
+    }
+    const stopRoom = watchOnlineRoom(roomCode, (room) => applyOnlineRoom(room, onlineUid), handleConnectionError)
     const stopPrivate = watchMyState(roomCode, onlineUid, ({ cards, tokens }) => setGame((current) => ({
       ...current,
       myCards: cards,
       players: current.players.map((player, index) => index === current.myIndex
         ? { ...player, tokens, warningOn: tokens <= 5 }
         : player) as GameState['players'],
-    })))
+    })), handleConnectionError)
     return () => { stopRoom(); stopPrivate() }
   }, [onlineUid, roomCode])
 
@@ -282,7 +319,7 @@ function App() {
         {game.phase === 'question' && <Question onDone={() => endRound()} />}
         {game.phase === 'truth' && <Truth guess={game.truthGuess} onChange={changeGuess} onDeclare={declareTruth} />}
         {game.phase === 'round_end' && <Waiting text={game.message} />}
-        {game.phase === 'game_over' && <GameOver onHome={() => { setGame(makeInitialGame()); setView('home') }} />}
+        {game.phase === 'game_over' && <GameOver onHome={() => { clearOnlineSession(); setRoomCode(''); setGame(makeInitialGame()); setView('home') }} />}
       </section>
       {game.phase !== 'card_selection' && game.myCards.length > 0 && <MyCards cards={game.myCards} />}
     </main>

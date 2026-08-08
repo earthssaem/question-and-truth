@@ -1,12 +1,17 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isRoomPlayer(roomCode) {
+      return request.auth != null
+        && request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomCode)).data.playerUids;
+    }
+
     match /rooms/{roomCode} {
       allow read: if request.auth != null && request.auth.uid in resource.data.playerUids;
       allow write: if false;
 
       match /private/{playerUid} {
-        allow read: if request.auth != null && request.auth.uid == playerUid;
+        allow read: if isRoomPlayer(roomCode) && request.auth.uid == playerUid;
         allow write: if false;
       }
     }
