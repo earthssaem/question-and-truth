@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, ChevronRight, Clipboard, Minus, Plus, ShieldAlert, Users } from 'lucide-react'
+import { Check, ChevronRight, Clipboard, List, Minus, Plus, ShieldAlert, Users, X } from 'lucide-react'
 import {
   RANKS,
   awardAndAdvance,
@@ -471,8 +471,94 @@ function BetLoss() {
   return <div className="center-action waiting"><ResultNotice title="상대가 베팅에서 이겼어요."><p>상대가 고르는 중...</p></ResultNotice></div>
 }
 
+const QUESTION_GROUPS = [
+  {
+    label: 'SUM',
+    korean: '합',
+    questions: [
+      [1, '선택한 카드 3장의 합은?'],
+      [2, '선택한 카드 모양의 합은?'],
+      [3, '알파벳 카드의 합은?'],
+      [4, '숫자 카드의 합은?'],
+    ],
+  },
+  {
+    label: 'COUNT',
+    korean: '장수',
+    questions: [
+      [5, '알파벳 카드의 장수는?'],
+      [6, '숫자 카드의 장수는?'],
+      [7, '특정 숫자/알파벳의 장수는?'],
+    ],
+  },
+  {
+    label: 'POSITION',
+    korean: '위치',
+    questions: [
+      [8, '해당 모양 카드의 위치는?'],
+      [9, '같은 숫자/알파벳 카드의 위치는?'],
+      [10, '연속되는 숫자/알파벳 카드의 위치는?'],
+      [11, '가장 큰 숫자 혹은 가장 작은 숫자의 위치는?'],
+    ],
+  },
+] as const
+
+function QuestionListModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onClose])
+
+  return (
+    <div className="question-modal-backdrop" onClick={onClose}>
+      <section className="question-modal" role="dialog" aria-modal="true" aria-labelledby="question-list-title" onClick={(event) => event.stopPropagation()}>
+        <header>
+          <h2 id="question-list-title">질문 목록</h2>
+          <button className="question-modal-close" type="button" onClick={onClose}><X size={17} />닫기</button>
+        </header>
+        <div className="question-modal-body">
+          <table className="question-table">
+            <colgroup><col className="question-type-column" /><col className="question-number-column" /><col /></colgroup>
+            <thead><tr><th scope="col">유형</th><th scope="col">번호</th><th scope="col">질문</th></tr></thead>
+            <tbody>
+              {QUESTION_GROUPS.flatMap((group) => group.questions.map(([number, question], index) => (
+                <tr className={index === 0 ? 'question-group-start' : ''} key={number}>
+                  {index === 0 && <th className="question-type" scope="rowgroup" rowSpan={group.questions.length}><b>{group.label}</b><span>({group.korean})</span></th>}
+                  <td className="question-number">{number}</td>
+                  <td>{question}</td>
+                </tr>
+              )))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 function Question({ onDone }: { onDone: () => void }) {
-  return <div className="center-action question"><p className="eyebrow">질문</p><h2>상대에게 질문하세요.</h2><button className="primary" onClick={onDone}>질문 완료</button></div>
+  const [showQuestions, setShowQuestions] = useState(false)
+  return (
+    <>
+      <div className="center-action question">
+        <p className="eyebrow">질문</p>
+        <h2>상대에게 질문하세요.</h2>
+        <div className="question-actions">
+          <button className="secondary" type="button" onClick={() => setShowQuestions(true)}><List size={18} />질문 보기</button>
+          <button className="primary" type="button" onClick={onDone}><Check size={18} />질문 완료</button>
+        </div>
+      </div>
+      {showQuestions && <QuestionListModal onClose={() => setShowQuestions(false)} />}
+    </>
+  )
 }
 
 function Truth({ guess, onChange, onDeclare }: { guess: Rank[]; onChange: (index: number, rank: Rank) => void; onDeclare: () => void }) {

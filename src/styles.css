@@ -793,6 +793,121 @@ input:focus, select:focus {
 .question { min-height: 190px; }
 .truth-panel { width: min(760px, 100%); text-align: center; }
 
+.question-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.question-actions .secondary { height: 48px; }
+
+.question-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  background: #11120ec7;
+}
+
+.question-modal {
+  width: min(720px, 100%);
+  max-height: min(760px, calc(100dvh - 40px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid #c59a46;
+  border-radius: 14px;
+  background: #f3ead6;
+  color: #2e2b24;
+  box-shadow: 0 18px 48px #090a076b;
+}
+
+.question-modal > header {
+  min-height: 64px;
+  padding: 12px 16px 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #c9ae76;
+  background: #e1bd6b;
+}
+
+.question-modal h2 {
+  margin: 0;
+  color: #30291d;
+  font-size: 22px;
+}
+
+.question-modal-close {
+  min-height: 38px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #81662f66;
+  border-radius: 8px;
+  background: #f5e5bd;
+  color: #3b3120;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.question-modal-body {
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.question-table {
+  width: 100%;
+  border-spacing: 0;
+  table-layout: fixed;
+  border: 1px solid #bda97d;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #fffaf0;
+  color: #332f28;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.question-type-column { width: 116px; }
+.question-number-column { width: 54px; }
+
+.question-table th,
+.question-table td {
+  padding: 11px 12px;
+  border-right: 1px solid #d8cdb5;
+  border-bottom: 1px solid #ded5c2;
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.question-table tr > :last-child { border-right: 0; }
+.question-table tbody tr:last-child > * { border-bottom: 0; }
+.question-table thead th { background: #e8d39f; color: #4d4027; font-size: 12px; font-weight: 800; }
+.question-table thead th:nth-child(2), .question-number { text-align: center; }
+.question-table .question-group-start:not(:first-child) > * { border-top: 2px solid #c6a45d; }
+
+.question-type {
+  background: #f0dfb8;
+  color: #59451f;
+  text-align: center !important;
+}
+
+.question-type b,
+.question-type span { display: block; }
+.question-type b { font-size: 12px; }
+.question-type span { margin-top: 2px; font-size: 11px; font-weight: 650; }
+.question-number { color: #795e28; font-weight: 800; }
+
 .truth-grid {
   margin: 28px 0;
   display: grid;
@@ -915,6 +1030,18 @@ input:focus, select:focus {
   .action-grid { grid-template-columns: 1fr; gap: 10px; }
   .action-tile { min-height: 94px; }
   .question, .truth-panel { padding: 22px 16px; }
+  .question-modal-backdrop { padding: 12px; }
+  .question-modal { max-height: calc(100dvh - 24px); }
+  .question-modal > header { min-height: 58px; padding: 10px 12px 10px 16px; }
+  .question-modal h2 { font-size: 19px; }
+  .question-modal-body { padding: 10px; }
+  .question-type-column { width: 72px; }
+  .question-number-column { width: 38px; }
+  .question-table { font-size: 13px; }
+  .question-table th, .question-table td { padding: 9px 8px; }
+  .question-table thead th { font-size: 11px; }
+  .question-type b { font-size: 10px; }
+  .question-type span { font-size: 10px; }
   .truth-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
 
   .my-cards { min-height: 138px; padding: 13px 10px 16px; }
@@ -956,6 +1083,8 @@ input:focus, select:focus {
   .stepper { grid-template-columns: 46px minmax(132px, auto) 46px; gap: 8px; }
   .stepper button { width: 46px; height: 46px; }
   .bet-amount { padding: 9px 12px; }
+  .question-actions { width: 100%; flex-direction: column; }
+  .question-actions .primary, .question-actions .secondary { width: 100%; }
 }
 
 @media (max-width: 340px) {
