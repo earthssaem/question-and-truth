@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { awardAndAdvance, isValidOrder, makeInitialGame, resolveLocalBet, sameRanks, toggleSelectedCard, type Card } from './game'
+import { awardAndAdvance, isValidOrder, makeBetOptions, makeInitialGame, resolveLocalBet, sameRanks, toggleSelectedCard, type Card, type GameState } from './game'
 
 describe('game rules', () => {
   it('같은 무늬의 카드는 오름차순으로만 배치한다', () => {
@@ -66,6 +66,11 @@ describe('game rules', () => {
     expect(selected.slice(0, 7).length === 8 && isValidOrder(selected.slice(0, 7))).toBe(false)
   })
 
+  it('베팅 선택지는 0부터 현재 보유 칩까지만 만든다', () => {
+    expect(makeBetOptions(7)).toEqual([0, 1, 2, 3, 4, 5, 6, 7])
+    expect(makeBetOptions(0)).toEqual([0])
+  })
+
   it('라운드 전환 한 번에 양쪽에 2칩을 지급한다', () => {
     const next = awardAndAdvance(makeInitialGame())
     expect(next.players.map((player) => player.tokens)).toEqual([12, 12])
@@ -80,6 +85,40 @@ describe('game rules', () => {
     expect(next.round).toBe(2)
     expect(next.players.map((player) => player.tokens)).toEqual([9, 9])
     expect(next.winnerIndex).toBeNull()
+    expect(next.result).toBe('tie')
+    expect(next.bet).toBe(0)
+  })
+
+  it('0 대 0도 동점으로 처리하고 차감 없이 양쪽에 2칩을 지급한다', () => {
+    const state = { ...makeInitialGame(), phase: 'betting' as const, bet: 0 }
+    const next = resolveLocalBet(state, 0)
+
+    expect(next.phase).toBe('betting')
+    expect(next.round).toBe(2)
+    expect(next.players.map((player) => player.tokens)).toEqual([12, 12])
+    expect(next.result).toBe('tie')
+  })
+
+  it('0 대 3은 3을 베팅한 플레이어가 승리하고 0 베팅은 칩을 차감하지 않는다', () => {
+    const state = { ...makeInitialGame(), phase: 'betting' as const, bet: 0 }
+    const next = resolveLocalBet(state, 3)
+
+    expect(next.phase).toBe('action_choice')
+    expect(next.players.map((player) => player.tokens)).toEqual([10, 7])
+    expect(next.winnerIndex).toBe(1)
+  })
+
+  it('보유 칩이 0인 플레이어도 0 베팅 후 정상적으로 동점을 정산한다', () => {
+    const initial = makeInitialGame()
+    const state = {
+      ...initial,
+      phase: 'betting' as const,
+      bet: 0,
+      players: initial.players.map((player) => ({ ...player, tokens: 0 })) as GameState['players'],
+    }
+    const next = resolveLocalBet(state, 0)
+
+    expect(next.players.map((player) => player.tokens)).toEqual([2, 2])
     expect(next.result).toBe('tie')
   })
 

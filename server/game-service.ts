@@ -71,6 +71,10 @@ export function shouldWarn(tokens: number) {
   return tokens <= 5
 }
 
+export function isValidBetAmount(amount: number, tokens: number) {
+  return Number.isInteger(amount) && amount >= 0 && amount <= tokens
+}
+
 function makeCode() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   return Array.from({ length: 6 }, () => alphabet[randomInt(alphabet.length)]).join('')
@@ -245,7 +249,7 @@ export async function confirmCards(db: Firestore, uid: string, codeValue: unknow
 
 export async function submitBet(db: Firestore, uid: string, codeValue: unknown, amountValue: unknown) {
   const code = cleanRoomCode(codeValue)
-  const amount = Number(amountValue)
+  const amount = typeof amountValue === 'number' ? amountValue : Number.NaN
   await db.runTransaction(async (tx) => {
     const roomRef = db.doc(`rooms/${code}`)
     const roomSnapshot = await tx.get(roomRef)
@@ -256,7 +260,7 @@ export async function submitBet(db: Firestore, uid: string, codeValue: unknown, 
     const ownSnapshot = await tx.get(ownRef)
     const ownState = ownSnapshot.data() as PrivatePlayer | undefined
     if (!ownState) fail('failed-precondition', '플레이어 비공개 상태가 없습니다.')
-    if (!Number.isInteger(amount) || amount < 1 || amount > ownState.tokens) {
+    if (!isValidBetAmount(amount, ownState.tokens)) {
       fail('invalid-argument', '베팅 수치가 올바르지 않습니다.')
     }
     if (player.betSubmitted) {
@@ -300,7 +304,7 @@ export async function submitBet(db: Firestore, uid: string, codeValue: unknown, 
         refs,
         privateByUid,
         'tie',
-        '베팅이 동점입니다. 행동 없이 다음 라운드를 시작합니다.',
+        '베팅 동점. 행동 없이 라운드가 종료되어 두 플레이어에게 2 CHIP을 지급했습니다.',
       )
       return
     }

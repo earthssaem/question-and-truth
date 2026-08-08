@@ -7,6 +7,7 @@ import {
   deck,
   isRed,
   isValidOrder,
+  makeBetOptions,
   makeInitialGame,
   resolveLocalBet,
   sameRanks,
@@ -40,27 +41,38 @@ const SESSION_NICKNAME_KEY = 'question-and-truth:nickname'
 const randomCode = () => Math.random().toString(36).slice(2, 8).toUpperCase()
 
 function CardFace({ card, selected, compact, onClick }: { card: Card; selected?: boolean; compact?: boolean; onClick?: () => void }) {
+  const symbol = suitSymbol(card.suit)
   return (
     <button
       className={`card ${isRed(card.suit) ? 'red' : ''} ${selected ? 'selected' : ''} ${compact ? 'compact' : ''}`}
       onClick={onClick}
       type="button"
-      aria-label={`${suitSymbol(card.suit)} ${card.rank}`}
+      aria-label={`${symbol} ${card.rank}`}
     >
-      <span>{card.rank}</span>
-      <strong>{suitSymbol(card.suit)}</strong>
+      <span className="card-index card-index-top"><b>{card.rank}</b><i>{symbol}</i></span>
+      <strong className="card-suit">{symbol}</strong>
+      <span className="card-index card-index-bottom"><b>{card.rank}</b><i>{symbol}</i></span>
     </button>
   )
 }
 
-function PlayerPanel({ player, opponent }: { player: GameState['players'][number]; opponent?: boolean }) {
+function PlayerPanel({ player, opponent, active }: { player: GameState['players'][number]; opponent?: boolean; active?: boolean }) {
   return (
-    <div className={`player-panel ${opponent ? 'opponent' : ''}`}>
-      <div className="player-name">
-        {opponent && <span className={`status-light ${player.warningOn ? 'warning' : ''}`} />}
-        {player.nickname}
+    <div className={`player-panel ${opponent ? 'opponent' : ''} ${active ? 'active' : ''}`}>
+      <span
+        className={opponent ? `player-indicator status-light ${player.warningOn ? 'warning' : ''}` : 'player-indicator me-indicator'}
+        title={opponent ? (player.warningOn ? '상대 칩 부족 경고' : '상대 칩 경고 없음') : '내 플레이어'}
+      />
+      <div className="player-identity">
+        <small>{opponent ? '상대' : '나'}</small>
+        <strong>{player.nickname}</strong>
       </div>
-      {!opponent && <div className="chip-count"><span className="chip-mini" /> {player.tokens} CHIP</div>}
+      <div className="player-meta">
+        {active && <span className="turn-status">행동 중</span>}
+        {!opponent
+          ? <span className="chip-count"><span className="chip-mini" /> {player.tokens} CHIP</span>
+          : <span className={`warning-label ${player.warningOn ? 'warning' : ''}`}>{player.warningOn ? 'CHIP LOW' : 'CHIP STATUS'}</span>}
+      </div>
     </div>
   )
 }
@@ -77,6 +89,7 @@ function App() {
 
   const me = game.players[game.myIndex]
   const opponent = game.players[game.myIndex === 0 ? 1 : 0]
+  const actionPhase = game.phase === 'action_choice' || game.phase === 'question' || game.phase === 'truth'
 
   const clearOnlineSession = () => {
     localStorage.removeItem(SESSION_ROOM_KEY)
@@ -107,6 +120,7 @@ function App() {
         action: room.action,
         result: room.result,
         message: room.message,
+        bet: room.round !== current.round ? 0 : current.bet,
       }
     })
     setView(room.phase === 'lobby' ? 'lobby' : 'game')
@@ -212,9 +226,10 @@ function App() {
   }
 
   const confirmBet = () => {
-    if (firebaseEnabled) { void submitOnlineBet(roomCode, game.bet).catch((reason) => setError(reason.message)); return }
-    const opponentBet = Math.min(opponent.tokens, Math.max(1, Math.floor(Math.random() * 6) + 1))
-    setGame((current) => resolveLocalBet(current, opponentBet))
+    const amount = Math.min(me.tokens, Math.max(0, game.bet))
+    if (firebaseEnabled) { void submitOnlineBet(roomCode, amount).catch((reason) => setError(reason.message)); return }
+    const opponentBet = Math.floor(Math.random() * (Math.min(opponent.tokens, 6) + 1))
+    setGame((current) => resolveLocalBet({ ...current, bet: amount }, opponentBet))
   }
 
   const chooseAction = (action: Action) => {
@@ -249,7 +264,7 @@ function App() {
   }
 
   const phaseLabel = useMemo(() => ({
-    lobby: 'LOBBY', card_selection: 'CARD SELECTION', betting: 'SECRET BET', bet_result: 'BET RESULT', action_choice: '', question: 'QUESTION', truth: 'TRUTH', round_end: 'ROUND END', game_over: 'GAME OVER',
+    lobby: 'LOBBY', card_selection: 'CARD SELECTION', betting: 'SECRET BET', bet_result: 'BET RESULT', action_choice: '', question: '질문', truth: '진실', round_end: 'ROUND END', game_over: 'GAME OVER',
   })[game.phase], [game.phase])
 
   if (view === 'home') {
@@ -301,9 +316,9 @@ function App() {
         <span className="room-small">ROOM {roomCode}</span>
       </header>
       <section className="scoreboard">
-        <PlayerPanel player={me} />
+        <PlayerPanel player={me} active={actionPhase && game.winnerIndex === game.myIndex} />
         <span className="versus-small">VS</span>
-        <PlayerPanel player={opponent} opponent />
+        <PlayerPanel player={opponent} opponent active={actionPhase && game.winnerIndex !== null && game.winnerIndex !== game.myIndex} />
       </section>
       <section className={`stage stage-${game.phase}`}>
         {game.phase === 'card_selection' && (me.confirmed
@@ -315,7 +330,7 @@ function App() {
         {game.phase === 'bet_result' && <Waiting text={game.message} />}
         {game.phase === 'action_choice' && (game.winnerIndex === game.myIndex
           ? <ActionChoice onChoose={chooseAction} />
-          : <Waiting text="상대방의 차례입니다." />)}
+          : <BetLoss />)}
         {game.phase === 'question' && <Question onDone={() => endRound()} />}
         {game.phase === 'truth' && <Truth guess={game.truthGuess} onChange={changeGuess} onDeclare={declareTruth} />}
         {game.phase === 'round_end' && <Waiting text={game.message} />}
@@ -356,19 +371,57 @@ function CardSelection({ selected, onToggle, onConfirm }: { selected: Card[]; on
 }
 
 function Betting({ game, setGame, onConfirm }: { game: GameState; setGame: React.Dispatch<React.SetStateAction<GameState>>; onConfirm: () => void }) {
-  return <div className="center-action"><p className="eyebrow">SECRET BET</p><h2>얼마를 걸겠습니까?</h2><p>{game.message || '두 플레이어의 베팅 수는 서로에게 공개되지 않습니다.'}</p><div className="stepper"><button title="베팅 감소" onClick={() => setGame((current) => ({ ...current, bet: Math.max(1, current.bet - 1) }))}><ChevronLeft /></button><div><strong>{game.bet}</strong><span>CHIP</span></div><button title="베팅 증가" onClick={() => setGame((current) => ({ ...current, bet: Math.min(game.players[game.myIndex].tokens, current.bet + 1) }))}><ChevronRight /></button></div><button className="primary" onClick={onConfirm}>베팅 확정</button></div>
+  const maxBet = Math.max(0, game.players[game.myIndex].tokens)
+  const bet = Math.min(maxBet, Math.max(0, game.bet))
+  const options = makeBetOptions(maxBet)
+
+  useEffect(() => {
+    if (bet !== game.bet) setGame((current) => ({ ...current, bet }))
+  }, [bet, game.bet, setGame])
+
+  return (
+    <div className="center-action betting-panel">
+      {game.result === 'tie' && (
+        <div className="tie-summary" role="status">
+          <strong>베팅 동점</strong>
+          <p>두 플레이어의 베팅이 같습니다.</p>
+          <span>행동 없이 라운드가 종료되었습니다.</span>
+          <b>두 플레이어 +2 CHIP</b>
+          <small>ROUND {game.round}</small>
+        </div>
+      )}
+      <p className="eyebrow">SECRET BET</p>
+      <h2>얼마를 걸겠습니까?</h2>
+      <p>0부터 현재 보유한 칩까지 선택할 수 있습니다.</p>
+      <div className="stepper">
+        <button type="button" title="베팅 감소" disabled={bet === 0} onClick={() => setGame((current) => ({ ...current, bet: Math.max(0, current.bet - 1) }))}><ChevronLeft /></button>
+        <div>
+          <select className="bet-select" aria-label="베팅할 칩 수" value={bet} onChange={(event) => setGame((current) => ({ ...current, bet: Number(event.target.value) }))}>
+            {options.map((amount) => <option value={amount} key={amount}>{amount}</option>)}
+          </select>
+          <span>CHIP</span>
+        </div>
+        <button type="button" title="베팅 증가" disabled={bet === maxBet} onClick={() => setGame((current) => ({ ...current, bet: Math.min(maxBet, current.bet + 1) }))}><ChevronRight /></button>
+      </div>
+      <button className="primary" onClick={onConfirm}>베팅 확정</button>
+    </div>
+  )
 }
 
 function ActionChoice({ onChoose }: { onChoose: (action: Action) => void }) {
-  return <div className="center-action"><h2>행동을 선택하세요.</h2><div className="action-grid"><button onClick={() => onChoose('QUESTION')}><span>Q</span><strong>QUESTION</strong><small>상대에게 직접 질문하기</small></button><button onClick={() => onChoose('TRUTH')}><span>T</span><strong>TRUTH</strong><small>카드 배열 선언하기</small></button></div></div>
+  return <div className="center-action"><strong className="bet-win-title">베팅 승리!</strong><h2>이번 라운드의 행동을 선택하세요.</h2><div className="action-grid"><button onClick={() => onChoose('QUESTION')}><strong>질문</strong><small>상대에게 직접 질문하기</small></button><button onClick={() => onChoose('TRUTH')}><strong>진실</strong><small>상대 카드 배열 선언하기</small></button></div></div>
+}
+
+function BetLoss() {
+  return <div className="center-action bet-loss"><h2>상대가 베팅에서 승리했습니다.</h2><p>상대의 선택을 기다리고 있습니다.</p></div>
 }
 
 function Question({ onDone }: { onDone: () => void }) {
-  return <div className="center-action question"><span className="giant-letter">Q</span><p className="eyebrow">QUESTION</p><h2>상대에게 질문하세요.</h2><button className="primary" onClick={onDone}>질문 완료</button></div>
+  return <div className="center-action question"><p className="eyebrow">질문</p><h2>상대에게 질문하세요.</h2><button className="primary" onClick={onDone}>질문 완료</button></div>
 }
 
 function Truth({ guess, onChange, onDeclare }: { guess: Rank[]; onChange: (index: number, rank: Rank) => void; onDeclare: () => void }) {
-  return <div className="truth-panel"><div className="stage-heading"><p>TRUTH</p><h2>상대 카드의 값과 순서를 선언하세요</h2></div><div className="truth-grid">{guess.map((rank, index) => <label key={index}><span>{index + 1}</span><select value={rank} onChange={(event) => onChange(index, event.target.value as Rank)}>{RANKS.map((item) => <option key={item}>{item}</option>)}</select></label>)}</div><button className="primary" onClick={onDeclare}>TRUTH 선언</button></div>
+  return <div className="truth-panel"><div className="stage-heading"><p>진실</p><h2>상대 카드의 값과 순서를 선언하세요</h2></div><div className="truth-grid">{guess.map((rank, index) => <label key={index}><span>{index + 1}</span><select value={rank} onChange={(event) => onChange(index, event.target.value as Rank)}>{RANKS.map((item) => <option key={item}>{item}</option>)}</select></label>)}</div><button className="primary" onClick={onDeclare}>진실 선언</button></div>
 }
 
 function GameOver({ onHome }: { onHome: () => void }) {

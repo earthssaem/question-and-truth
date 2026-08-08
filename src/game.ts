@@ -44,6 +44,11 @@ export const cardId = (card: Card) => `${card.suit}-${card.rank}`
 export const suitSymbol = (suit: Suit) => ({ spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' })[suit]
 export const isRed = (suit: Suit) => suit === 'hearts' || suit === 'diamonds'
 
+export function makeBetOptions(tokens: number): number[] {
+  const maximum = Math.max(0, Math.floor(tokens))
+  return Array.from({ length: maximum + 1 }, (_, amount) => amount)
+}
+
 export function shuffle<T>(items: T[]): T[] {
   const copy = [...items]
   for (let index = copy.length - 1; index > 0; index -= 1) {
@@ -89,7 +94,7 @@ export function makeInitialGame(): GameState {
     myCards: [],
     opponentCards: shuffle(cards.slice(8, 16)),
     selectedCards: [],
-    bet: 1,
+    bet: 0,
     opponentBet: null,
     winnerIndex: null,
     action: null,
@@ -113,7 +118,7 @@ export function awardAndAdvance(
     phase: 'betting',
     round: state.round + 1,
     players,
-    bet: 1,
+    bet: 0,
     opponentBet: null,
     winnerIndex: null,
     action: null,
@@ -135,7 +140,7 @@ export function resolveLocalBet(state: GameState, opponentBet: number): GameStat
     return awardAndAdvance(
       { ...state, players: charged, opponentBet: null, winnerIndex: null },
       'tie',
-      '베팅이 동점입니다. 행동 없이 다음 라운드를 시작합니다.',
+      '베팅 동점. 행동 없이 라운드가 종료되어 두 플레이어에게 2 CHIP을 지급했습니다.',
     )
   }
 

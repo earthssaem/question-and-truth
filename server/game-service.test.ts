@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanRoomCode, isValidCardSelection, isValidTruthGuess, shouldWarn } from './game-service'
+import { cleanRoomCode, isValidBetAmount, isValidCardSelection, isValidTruthGuess, shouldWarn } from './game-service'
 
 describe('trusted backend validation', () => {
   it('방 코드는 정규화하고 잘못된 입력은 거부한다', () => {
@@ -31,5 +31,15 @@ describe('trusted backend validation', () => {
   it('경고등에는 칩 임계값만 공개한다', () => {
     expect(shouldWarn(5)).toBe(true)
     expect(shouldWarn(6)).toBe(false)
+  })
+
+  it('서버는 0부터 현재 보유 칩까지만 베팅으로 허용한다', () => {
+    expect(isValidBetAmount(0, 0)).toBe(true)
+    expect(isValidBetAmount(0, 7)).toBe(true)
+    expect(isValidBetAmount(7, 7)).toBe(true)
+    expect(isValidBetAmount(8, 7)).toBe(false)
+    expect(isValidBetAmount(-1, 7)).toBe(false)
+    expect(isValidBetAmount(1.5, 7)).toBe(false)
+    expect(isValidBetAmount(Number.NaN, 7)).toBe(false)
   })
 })
