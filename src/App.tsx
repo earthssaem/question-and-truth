@@ -172,6 +172,7 @@ function App() {
     setExitOpen(false)
     setLeaving(false)
     setLeaveError('')
+    setError('')
     setView('home')
   }, [])
 
@@ -270,10 +271,11 @@ function App() {
   useEffect(() => {
     if (!firebaseEnabled || !roomCode || !onlineUid) return
     const handleConnectionError = (reason: Error) => {
-      setError(reason.message)
       if (reason.message.includes('찾을 수 없습니다') || reason.message.includes('permission')) {
         returnHome()
+        return
       }
+      setError(reason.message)
     }
     const stopRoom = watchOnlineRoom(roomCode, (room) => applyOnlineRoom(room, onlineUid), handleConnectionError)
     const stopPrivate = watchMyState(roomCode, onlineUid, ({ cards, tokens }) => setGame((current) => ({
