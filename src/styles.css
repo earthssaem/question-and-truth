@@ -114,8 +114,9 @@ h1 {
 .home-copy {
   margin: 14px 0 0;
   color: #c8c1b5;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.65;
+  white-space: nowrap;
 }
 
 .home-actions { margin-top: 38px; text-align: left; }
@@ -835,7 +836,7 @@ input:focus, select:focus {
   .home-shell { padding: max(22px, env(safe-area-inset-top)) 22px max(22px, env(safe-area-inset-bottom)); }
   .home-panel { padding: 10px 0 0; }
   .home-panel h1 { font-size: 38px; font-weight: 750; }
-  .home-copy { margin-top: 12px; font-size: 14px; }
+  .home-copy { margin-top: 12px; font-size: 13px; }
   .home-actions { margin-top: 30px; }
   .home-divider { margin: 21px 0 17px; }
   .lobby-shell { padding: 18px 14px; }
@@ -911,6 +912,7 @@ input:focus, select:focus {
   .home-shell { padding-right: 20px; padding-left: 20px; }
   .home-panel { padding-top: 8px; }
   .home-panel h1 { font-size: 36px; }
+  .home-copy { font-size: 12px; }
   .home-actions { margin-top: 27px; }
   .lobby-panel { padding: 26px 18px; }
   h1 { font-size: 36px; }
@@ -926,4 +928,8 @@ input:focus, select:focus {
   .stepper { grid-template-columns: 46px minmax(132px, auto) 46px; gap: 8px; }
   .stepper button { width: 46px; height: 46px; }
   .bet-amount { padding: 9px 12px; }
+}
+
+@media (max-width: 340px) {
+  .home-copy { font-size: 11px; }
 }
