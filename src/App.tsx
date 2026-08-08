@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, ChevronLeft, ChevronRight, Clipboard, DoorOpen, Plus, ShieldAlert, Users } from 'lucide-react'
+import { Check, ChevronRight, Clipboard, DoorOpen, Minus, Plus, ShieldAlert, Users } from 'lucide-react'
 import {
   RANKS,
   awardAndAdvance,
@@ -56,22 +56,30 @@ function CardFace({ card, selected, compact, onClick }: { card: Card; selected?:
   )
 }
 
+function ChipIndicator({ tokens }: { tokens: number }) {
+  return <span className="chip-indicator"><i className="chip-token" aria-hidden="true" /><strong>{tokens}</strong> CHIP</span>
+}
+
+function WarningLight({ on }: { on: boolean }) {
+  return (
+    <span className={`warning-indicator ${on ? 'warning' : ''}`} aria-label={`칩 경고등 ${on ? '켜짐' : '꺼짐'}`}>
+      <span>칩 경고등</span>
+      <i className="status-light" aria-hidden="true" />
+      <b>{on ? 'ON' : 'OFF'}</b>
+    </span>
+  )
+}
+
 function PlayerPanel({ player, opponent, active }: { player: GameState['players'][number]; opponent?: boolean; active?: boolean }) {
   return (
     <div className={`player-panel ${opponent ? 'opponent' : ''} ${active ? 'active' : ''}`}>
-      <span
-        className={opponent ? `player-indicator status-light ${player.warningOn ? 'warning' : ''}` : 'player-indicator me-indicator'}
-        title={opponent ? (player.warningOn ? '상대 칩 부족 경고' : '상대 칩 경고 없음') : '내 플레이어'}
-      />
       <div className="player-identity">
-        <small>{opponent ? '상대' : '나'}</small>
         <strong>{player.nickname}</strong>
+        <small>{opponent ? '상대 플레이어' : '나'}</small>
       </div>
       <div className="player-meta">
-        {active && <span className="turn-status">행동 중</span>}
-        {!opponent
-          ? <span className="chip-count"><span className="chip-mini" /> {player.tokens} CHIP</span>
-          : <span className={`warning-label ${player.warningOn ? 'warning' : ''}`}>{player.warningOn ? 'CHIP LOW' : 'CHIP STATUS'}</span>}
+        {active && <span className="turn-status"><i />현재 행동</span>}
+        {!opponent ? <ChipIndicator tokens={player.tokens} /> : <WarningLight on={player.warningOn} />}
       </div>
     </div>
   )
@@ -382,38 +390,46 @@ function Betting({ game, setGame, onConfirm }: { game: GameState; setGame: React
   return (
     <div className="center-action betting-panel">
       {game.result === 'tie' && (
-        <div className="tie-summary" role="status">
-          <strong>베팅 동점</strong>
+        <ResultNotice title="베팅 동점" tone="gold">
           <p>두 플레이어의 베팅이 같습니다.</p>
           <span>행동 없이 라운드가 종료되었습니다.</span>
           <b>두 플레이어 +2 CHIP</b>
           <small>ROUND {game.round}</small>
-        </div>
+        </ResultNotice>
       )}
       <p className="eyebrow">SECRET BET</p>
-      <h2>얼마를 걸겠습니까?</h2>
-      <p>0부터 현재 보유한 칩까지 선택할 수 있습니다.</p>
+      <h2>몇 개의 칩을 베팅할까요?</h2>
+      <p>보유한 칩 안에서 원하는 수를 고르세요.</p>
       <div className="stepper">
-        <button type="button" title="베팅 감소" disabled={bet === 0} onClick={() => setGame((current) => ({ ...current, bet: Math.max(0, current.bet - 1) }))}><ChevronLeft /></button>
-        <div>
+        <button type="button" title="베팅 감소" disabled={bet === 0} onClick={() => setGame((current) => ({ ...current, bet: Math.max(0, current.bet - 1) }))}><Minus /></button>
+        <div className="bet-amount">
+          <i className="chip-token" aria-hidden="true" />
           <select className="bet-select" aria-label="베팅할 칩 수" value={bet} onChange={(event) => setGame((current) => ({ ...current, bet: Number(event.target.value) }))}>
             {options.map((amount) => <option value={amount} key={amount}>{amount}</option>)}
           </select>
           <span>CHIP</span>
         </div>
-        <button type="button" title="베팅 증가" disabled={bet === maxBet} onClick={() => setGame((current) => ({ ...current, bet: Math.min(maxBet, current.bet + 1) }))}><ChevronRight /></button>
+        <button type="button" title="베팅 증가" disabled={bet === maxBet} onClick={() => setGame((current) => ({ ...current, bet: Math.min(maxBet, current.bet + 1) }))}><Plus /></button>
       </div>
       <button className="primary" onClick={onConfirm}>베팅 확정</button>
     </div>
   )
 }
 
+function ActionTile({ title, description, onClick }: { title: string; description: string; onClick: () => void }) {
+  return <button className="action-tile" onClick={onClick}><strong>{title}</strong><small>{description}</small></button>
+}
+
+function ResultNotice({ title, tone = 'neutral', children }: { title: string; tone?: 'neutral' | 'gold' | 'danger'; children?: React.ReactNode }) {
+  return <div className={`result-notice ${tone}`} role="status"><strong>{title}</strong>{children}</div>
+}
+
 function ActionChoice({ onChoose }: { onChoose: (action: Action) => void }) {
-  return <div className="center-action"><strong className="bet-win-title">베팅 승리!</strong><h2>이번 라운드의 행동을 선택하세요.</h2><div className="action-grid"><button onClick={() => onChoose('QUESTION')}><strong>질문</strong><small>상대에게 직접 질문하기</small></button><button onClick={() => onChoose('TRUTH')}><strong>진실</strong><small>상대 카드 배열 선언하기</small></button></div></div>
+  return <div className="center-action"><ResultNotice title="베팅 승리!" tone="gold"><p>이번 라운드에서 무엇을 할까요?</p></ResultNotice><div className="action-grid"><ActionTile title="질문" description="상대에게 직접 질문하기" onClick={() => onChoose('QUESTION')} /><ActionTile title="진실" description="상대 카드 배열 선언하기" onClick={() => onChoose('TRUTH')} /></div></div>
 }
 
 function BetLoss() {
-  return <div className="center-action bet-loss"><h2>상대가 베팅에서 승리했습니다.</h2><p>상대의 선택을 기다리고 있습니다.</p></div>
+  return <div className="center-action"><ResultNotice title="상대가 베팅에서 승리했습니다."><p>상대의 선택을 기다리고 있습니다.</p></ResultNotice></div>
 }
 
 function Question({ onDone }: { onDone: () => void }) {
@@ -425,10 +441,10 @@ function Truth({ guess, onChange, onDeclare }: { guess: Rank[]; onChange: (index
 }
 
 function GameOver({ onHome }: { onHome: () => void }) {
-  return <div className="center-action"><span className="result-mark">TRUTH</span><p className="eyebrow">GAME OVER</p><h2>정답입니다.</h2><p>상대의 카드 배열을 정확히 알아냈습니다.</p><button className="primary" onClick={onHome}>처음으로</button></div>
+  return <div className="center-action"><p className="eyebrow">GAME OVER</p><ResultNotice title="정답입니다." tone="gold"><p>상대의 카드 배열을 정확히 알아냈습니다.</p></ResultNotice><button className="primary" onClick={onHome}>처음으로</button></div>
 }
 
-function Waiting({ text }: { text: string }) { return <div className="center-action waiting"><h2>{text}</h2></div> }
+function Waiting({ text }: { text: string }) { return <div className="center-action waiting"><ResultNotice title={text} /></div> }
 
 function MyCards({ cards }: { cards: Card[] }) {
   return <section className="my-cards"><p className="eyebrow">MY CARDS</p><div className="hand">{cards.map((card, index) => <div key={`${cardId(card)}-${index}`}><small>{index + 1}</small><CardFace card={card} compact /></div>)}</div></section>
