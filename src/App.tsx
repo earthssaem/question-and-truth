@@ -110,6 +110,10 @@ function ExitButton({ className = '', onClick }: { className?: string; onClick: 
   return <button className={`exit-button ${className}`} type="button" onClick={onClick}><LogOut size={16} />나가기</button>
 }
 
+function AppFooter() {
+  return <footer className="app-footer">© 2026 제작: 김연경(<a href="mailto:earthssaem@gmail.com">earthssaem@gmail.com</a>)</footer>
+}
+
 function ExitConfirmModal({ lobby, pending, error, onCancel, onConfirm }: { lobby: boolean; pending: boolean; error: string; onCancel: () => void; onConfirm: () => void }) {
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
@@ -377,8 +381,9 @@ function App() {
 
   if (view === 'home') {
     return (
-      <main className="home-shell">
-        <section className="home-panel">
+      <div className="app-frame">
+        <main className="home-shell">
+          <section className="home-panel">
           <header className="home-intro">
             <div className="suit-motif" aria-hidden="true"><span>♠</span><span>♥</span><span>♦</span><span>♣</span></div>
             <h1>질문과 진실</h1>
@@ -409,16 +414,19 @@ function App() {
             </div>
           </div>
           {error && <p className="form-error"><ShieldAlert size={14} /> {error}</p>}
-        </section>
-      </main>
+          </section>
+        </main>
+        <AppFooter />
+      </div>
     )
   }
 
   if (view === 'lobby') {
     return (
-      <main className="lobby-shell">
-        <ExitButton className="lobby-exit-button" onClick={openExitConfirm} />
-        <section className="lobby-panel">
+      <div className="app-frame">
+        <main className="lobby-shell">
+          <ExitButton className="lobby-exit-button" onClick={openExitConfirm} />
+          <section className="lobby-panel">
           <h1>{bothPlayersJoined ? '두 플레이어가 입장했습니다' : '상대를 기다리는 중'}</h1>
           <div className="room-code"><span>방 코드</span><strong>{roomCode}</strong><button className="icon-button" title="방 코드 복사" type="button" onClick={() => { navigator.clipboard?.writeText(roomCode); setCopied(true) }}>{copied ? <Check /> : <Clipboard />}</button></div>
           <div className="versus">
@@ -431,24 +439,27 @@ function App() {
             {!bothPlayersJoined ? '상대 입장 대기 중' : me.ready ? '준비 완료' : '준비'}
           </button>
           {error && <p className="form-error"><ShieldAlert size={14} /> {error}</p>}
-        </section>
-        {exitOpen && <ExitConfirmModal lobby pending={leaving} error={leaveError} onCancel={() => { if (!leaving) setExitOpen(false) }} onConfirm={() => void leaveRoom()} />}
-      </main>
+          </section>
+          {exitOpen && <ExitConfirmModal lobby pending={leaving} error={leaveError} onCancel={() => { if (!leaving) setExitOpen(false) }} onConfirm={() => void leaveRoom()} />}
+        </main>
+        <AppFooter />
+      </div>
     )
   }
 
   return (
-    <main className="game-shell">
-      <header className="game-header">
+    <div className="app-frame">
+      <main className="game-shell">
+        <header className="game-header">
         <span className="game-meta"><b>{game.round}라운드</b><i>·</i>방 코드 {roomCode}</span>
         {game.phase !== 'game_over' && game.phase !== 'game_cancelled' && <ExitButton onClick={openExitConfirm} />}
-      </header>
-      <section className="scoreboard">
+        </header>
+        <section className="scoreboard">
         <PlayerPanel player={game.players[0]} slot={0} isMe={game.myIndex === 0} active={actionPhase && game.winnerIndex === 0} />
         <span className="versus-small">VS</span>
         <PlayerPanel player={game.players[1]} slot={1} isMe={game.myIndex === 1} active={actionPhase && game.winnerIndex === 1} />
-      </section>
-      <section className={`stage stage-${game.phase}`}>
+        </section>
+        <section className={`stage stage-${game.phase}`}>
         {game.phase === 'card_selection' && (me.confirmed
           ? <Waiting text="상대가 카드 배열을 정하는 중..." />
           : <CardSelection selected={game.selectedCards} onToggle={toggleCard} onConfirm={confirmCards} />)}
@@ -468,10 +479,12 @@ function App() {
         {game.phase === 'round_end' && <Waiting text={game.message} />}
         {game.phase === 'game_over' && <GameOver game={game} onHome={returnHome} />}
         {game.phase === 'game_cancelled' && <GameCancelled endedByMe={game.endedByIndex === game.myIndex} onHome={returnHome} />}
-      </section>
-      {game.phase !== 'card_selection' && game.myCards.length > 0 && <MyCards cards={game.myCards} />}
-      {exitOpen && <ExitConfirmModal lobby={false} pending={leaving} error={leaveError} onCancel={() => { if (!leaving) setExitOpen(false) }} onConfirm={() => void leaveRoom()} />}
-    </main>
+        </section>
+        {game.phase !== 'card_selection' && game.myCards.length > 0 && <MyCards cards={game.myCards} />}
+        {exitOpen && <ExitConfirmModal lobby={false} pending={leaving} error={leaveError} onCancel={() => { if (!leaving) setExitOpen(false) }} onConfirm={() => void leaveRoom()} />}
+      </main>
+      <AppFooter />
+    </div>
   )
 }
 
